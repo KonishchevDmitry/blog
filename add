@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+set -eu
+
+if [ $# -ne 1 ]; then
+    echo "Usage: $0 NAME" >&2
+    exit 1
+fi
+
+hugo new content "posts/$(date +%F)-$1.md"
