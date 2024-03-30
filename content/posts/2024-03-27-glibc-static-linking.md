@@ -1,6 +1,6 @@
 ---
 title: Проблемы обратной совместимости glibc
-slug: static-glibc
+slug: glibc-static-linking
 date: 2024-03-27T21:57:31+03:00
 ---
 
