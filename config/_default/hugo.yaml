@@ -1,0 +1,12 @@
+title: Dmitry Konishchev's small blog
+baseURL: https://konishchev.ru/
+
+languageCode: ru
+defaultContentLanguage: ru
+
+permalinks:
+  page:
+    posts: "/:year/:month/:day/:slug/"
+
+theme: papermod
+cleanDestinationDir: true
