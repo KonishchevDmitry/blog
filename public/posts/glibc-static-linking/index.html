@@ -75,7 +75,7 @@
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://konishchev.ru/posts/glibc-static-linking/" /><meta property="article:section" content="posts" />
 <meta property="article:published_time" content="2024-03-27T21:57:31+03:00" />
-<meta property="article:modified_time" content="2024-03-27T21:57:31+03:00" />
+<meta property="article:modified_time" content="2024-03-31T20:14:29+03:00" />
 
 <meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="Проблемы обратной совместимости glibc"/>
@@ -116,7 +116,7 @@
   "wordCount" : "826",
   "inLanguage": "ru",
   "datePublished": "2024-03-27T21:57:31+03:00",
-  "dateModified": "2024-03-27T21:57:31+03:00",
+  "dateModified": "2024-03-31T20:14:29+03:00",
   "mainEntityOfPage": {
     "@type": "WebPage",
     "@id": "https://konishchev.ru/posts/glibc-static-linking/"
@@ -191,7 +191,7 @@
   <div class="post-content"><p>В своей работе я не раз сталкивался с тем, что, собрав Go/Rust-программу на своей рабочей машине и скопировав её на другую, с более старой версией дистрибутива, есть большой шанс того, что она при запуске упадёт с ошибкой вида <code>/lib/x86_64-linux-gnu/libc.so.6: version `GLIBC_2.38' not found</code>. Обычно разбираться всегда было некогда, и я просто пересобирал свою программу на нужной версии дистрибутива, но вот тут стало интересно – и я пошёл посмотреть, как скомпилить свою Rust&rsquo;овую программу статически с glibc, чтобы не иметь таких проблем. В результате узнал для себя что-то новое и делюсь своими находками:</p>
 <h2 id="glibc">glibc<a hidden class="anchor" aria-hidden="true" href="#glibc">#</a></h2>
 <p>Первая мысль была довольно предсказуемой и понятной: &ldquo;пойду-ка посмотрю, как собрать статически Rust&rsquo;овый crate с glibc&rdquo; – и, на самом деле, особых проблем с этим нет. Надо всего лишь сделать вот так:</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>RUSTFLAGS=<span style="color:#a31515">&#39;-C target-feature=+crt-static&#39;</span> cargo build --release --target x86_64-unknown-linux-gnu
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>RUSTFLAGS<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;-C target-feature=+crt-static&#39;</span> cargo build --release --target x86_64-unknown-linux-gnu
 </span></span></code></pre></div><p>– и оно работает, программа запускается без проблем!</p>
 <p>Но, если покопать эту тему чуть более подробно, то выясняется, что решение это – на самом деле не очень хорошее. Всё дело в том, что glibc так устроена, что она в принципе не особо предназначена для статической линковки: из-за <a href="http://man7.org/linux/man-pages/man5/nsswitch.conf.5.html">NSS</a>, <a href="http://man7.org/linux/man-pages/man3/iconv.3.html"><code>iconv(3)</code></a> и пр. она полагается на <a href="http://man7.org/linux/man-pages/man3/dlopen.3.html"><code>dlopen(3)</code></a>, и определённые функции стандартной библиотеки могут стриггерить, скажем, загрузку NSS-модуля, который является динамически разделяемой библиотекой, к тому же динамически слинкованной с glibc, что в свою очередь может привести к ситуации, когда у нас в адресном пространстве приложения будут загружены две glibc: статическая и динамически подгруженная через зависимость NSS-модуля, что в итоге может привести к разным интересным последствиям (скажем, как они будут делить буферы <code>stdout</code>?). Внутри неё на самом деле есть различные подпорки, чтобы статическая сборка всё-таки нормально работала в большинстве случаев, но вот только гарантий, что она будет работать во всех возможных сценариях – нет.</p>
 <p>В итоге, большинство людей сходятся в том, что статическую сборку с glibc лучше не использовать, т. к. мы тут идём против её дизайна и рискуем получить неожиданные последствия от таких действий. И самый оптимальный вариант тут – использовать для сборки Docker-контейнер с каким-нибудь заведомо не самым свежим LTS-дистрибутивом – и линковаться против glibc его версии.</p>
@@ -201,7 +201,7 @@
 <p>Честно говоря, я musl до этого момента ни разу не пользовался, т. к. мне всегда казалось довольно странным использовать что-то нестандартное вместо glibc – обязательно ведь где-нибудь что-нибудь будет работать по-другому и можно нарваться на какие-нибудь неприятные сюрпризы в самый неподходящий на то момент. Поэтому всегда считал, что её использование имеет смысл разве что в embedded, либо где-нибудь вроде <a href="https://www.alpinelinux.org/">Alpine</a>, где нам по какой-то причине хочется получить максимально компактный образ.</p>
 <p>Но если смотреть с позиции статической линковки, использование musl вполне имеет смысл, т. к. для неё, в отличие от glibc, статическая линковка является абсолютно стандартным вариантом использования.</p>
 <p>Поэтому (в случае Rust) выполняем:</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>rustup target add x86_64-unknown-linux-musl
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>rustup target add x86_64-unknown-linux-musl
 </span></span><span style="display:flex;"><span>cargo build --target x86_64-unknown-linux-musl
 </span></span></code></pre></div><p>– и получаем то, что нам нужно. Правда, свои &ldquo;но&rdquo; тут тоже есть&hellip;</p>
 <p>musl ставит своей целью быть компактной и простой в реализации, и, как это часто бывает, когда кто-то ставит себе такую цель, порой оказывается, что некоторые вещи в принципе не должны быть простыми, и слишком простая их реализация приводит к проблемам.</p>

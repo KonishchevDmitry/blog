@@ -1,12 +1,20 @@
+# For debugging use:
+# hugo config --format yaml | less
+
 title: Dmitry Konishchev's small blog
 baseURL: https://konishchev.ru/
 
 languageCode: ru
 defaultContentLanguage: ru
 
-permalinks:
-  page:
-    posts: "/:year/:month/:day/:slug/"
+# We don't use tags and categories, so don't generate them
+disableKinds: ["taxonomy"]
 
 theme: papermod
+# FIXME(konishchev): Change style after theme tunning
+# markup:
+#   highlight:
+#     style: vs
+
+enableGitInfo: true
 cleanDestinationDir: true
