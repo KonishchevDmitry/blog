@@ -64,13 +64,13 @@
     (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
 
     ym(96897335, "init", {
-         clickmap:true,
-         trackLinks:true,
-         accurateTrackBounce:true
+        clickmap:true,
+        trackLinks:true,
+        accurateTrackBounce:true
     });
- </script>
- <noscript><div><img src="https://mc.yandex.ru/watch/96897335" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
- <meta property="og:title" content="Проблемы обратной совместимости glibc" />
+</script>
+<noscript><div><img src="https://mc.yandex.ru/watch/96897335" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+<meta property="og:title" content="Проблемы обратной совместимости glibc" />
 <meta property="og:description" content="В своей работе я не раз сталкивался с тем, что, собрав Go/Rust-программу на своей рабочей машине и скопировав её на другую, с более старой версией дистрибутива, есть большой шанс того, что она при запуске упадёт с ошибкой вида /lib/x86_64-linux-gnu/libc.so.6: version `GLIBC_2.38&#39; not found. Обычно разбираться всегда было некогда, и я просто пересобирал свою программу на нужной версии дистрибутива, но вот тут стало интересно – и я пошёл посмотреть, как скомпилить свою Rust&rsquo;овую программу статически с glibc, чтобы не иметь таких проблем." />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://konishchev.ru/posts/glibc-static-linking/" /><meta property="article:section" content="posts" />
