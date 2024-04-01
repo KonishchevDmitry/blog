@@ -5,3 +5,4 @@ cd "$(dirname "$0")"
 
 hugo
 rsync --archive --delete --delete-after --verbose ./public/ server.lan:/srv/blog/
+git diff ./public
