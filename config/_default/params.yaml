@@ -1,0 +1,18 @@
+defaultTheme: light
+disableThemeToggle: true
+
+disableSpecial1stPost: true
+dateFormat: 2 January 2006
+showCodeCopyButtons: true
+showFullTextInRSS: true
+
+showToc: true
+tocOpen: true
+
+# FIXME(konishchev): Later:
+# tocSide: right
+# socialIcons:
+# editPost:
+#   URL: "https://github.com/<path_to_repo>/content"
+#   Text: "Suggest Changes"
+#   appendFilePath: true
