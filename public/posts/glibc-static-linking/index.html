@@ -129,7 +129,27 @@
     <div class="post-meta"><span title='2024-03-27 21:57:31 +0300 MSK'>27 марта 2024</span>
 
 </div>
-  </header> 
+  </header> <div class="toc">
+    <details  open>
+        <summary accesskey="c" title="(Alt + C)">
+            <span class="details">Оглавление</span>
+        </summary>
+
+        <div class="inner"><ul>
+                <li>
+                    <a href="#glibc" aria-label="glibc">glibc</a></li>
+                <li>
+                    <a href="#musl" aria-label="musl">musl</a></li>
+                <li>
+                    <a href="#eyra" aria-label="Eyra">Eyra</a></li>
+                <li>
+                    <a href="#%d0%b8%d0%bd%d1%82%d0%b5%d1%80%d0%b5%d1%81%d0%bd%d1%8b%d0%b9-%d1%84%d0%b0%d0%ba%d1%82" aria-label="Интересный факт">Интересный факт</a>
+                </li>
+            </ul>
+        </div>
+    </details>
+</div>
+
   <div class="post-content"><p>В своей работе я не раз сталкивался с тем, что, собрав Go/Rust-программу на своей рабочей машине и скопировав её на другую, с более старой версией дистрибутива, есть большой шанс того, что она при запуске упадёт с ошибкой вида <code>/lib/x86_64-linux-gnu/libc.so.6: version `GLIBC_2.38' not found</code>. Обычно разбираться всегда было некогда, и я просто пересобирал свою программу на нужной версии дистрибутива, но вот тут стало интересно – и я пошёл посмотреть, как скомпилить свою Rust&rsquo;овую программу статически с glibc, чтобы не иметь таких проблем. В результате узнал для себя что-то новое и делюсь своими находками:</p>
 <h2 id="glibc">glibc<a hidden class="anchor" aria-hidden="true" href="#glibc">#</a></h2>
 <p>Первая мысль была довольно предсказуемой и понятной: &ldquo;пойду-ка посмотрю, как собрать статически Rust&rsquo;овый crate с glibc&rdquo; – и, на самом деле, особых проблем с этим нет. Надо всего лишь сделать вот так:</p>
