@@ -3,9 +3,7 @@
 
 title: Dmitry Konishchev's small blog
 baseURL: https://konishchev.ru/
-
-# FIXME(konishchev): Later:
-# copyright: "© [Dmitry Konishchev](mailto:konishchev@gmail.com)"
+copyright: "© [Dmitry Konishchev](mailto:konishchev@gmail.com)"
 
 languageCode: ru
 defaultContentLanguage: ru
