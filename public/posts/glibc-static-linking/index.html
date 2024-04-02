@@ -10,48 +10,20 @@
 <meta name="description" content="В своей работе я не раз сталкивался с тем, что, собрав Go/Rust-программу на своей рабочей машине и скопировав её на другую, с более старой версией дистрибутива, есть большой шанс того, что она при запуске упадёт с ошибкой вида /lib/x86_64-linux-gnu/libc.so.6: version `GLIBC_2.38&#39; not found. Обычно разбираться всегда было некогда, и я просто пересобирал свою программу на нужной версии дистрибутива, но вот тут стало интересно – и я пошёл посмотреть, как скомпилить свою Rust&rsquo;овую программу статически с glibc, чтобы не иметь таких проблем.">
 <meta name="author" content="">
 <link rel="canonical" href="https://konishchev.ru/posts/glibc-static-linking/">
-<link crossorigin="anonymous" href="/assets/css/stylesheet.b609c58d5c11bb90b1a54e04005d74ad1ddf22165eb79f5533967e57df9c3b50.css" integrity="sha256-tgnFjVwRu5CxpU4EAF10rR3fIhZet59VM5Z&#43;V9&#43;cO1A=" rel="preload stylesheet" as="style">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.min.7da7716a1f2d0725f74c6ae7f8d6adafc43aabe2b366b65bfbf433448e2a2001.css" integrity="sha256-fadxah8tByX3TGrn&#43;Natr8Q6q&#43;KzZrZb&#43;/QzRI4qIAE=" rel="preload stylesheet" as="style">
 <link rel="icon" href="https://konishchev.ru/favicon.ico">
-<link rel="icon" type="image/png" sizes="16x16" href="https://konishchev.ru/favicon-16x16.png">
-<link rel="icon" type="image/png" sizes="32x32" href="https://konishchev.ru/favicon-32x32.png">
 <link rel="apple-touch-icon" href="https://konishchev.ru/apple-touch-icon.png">
-<link rel="mask-icon" href="https://konishchev.ru/safari-pinned-tab.svg">
-<meta name="theme-color" content="#2e2e33">
-<meta name="msapplication-TileColor" content="#2e2e33">
 <link rel="alternate" hreflang="ru" href="https://konishchev.ru/posts/glibc-static-linking/">
-<noscript>
-    <style>
-        #theme-toggle,
-        .top-link {
-            display: none;
-        }
 
-    </style>
-</noscript>
-<script type="text/javascript" >
-    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
-    m[i].l=1*new Date();
-    for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
-    k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
-    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
-
-    ym(96897335, "init", {
-        clickmap:true,
-        trackLinks:true,
-        accurateTrackBounce:true
-    });
-</script>
-<noscript><div><img src="https://mc.yandex.ru/watch/96897335" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
-<meta property="og:title" content="Проблемы обратной совместимости glibc" />
+<meta name="twitter:title" content="Проблемы обратной совместимости glibc | Dmitry Konishchev&#39;s small blog" />
+<meta name="twitter:description" content="В своей работе я не раз сталкивался с тем, что, собрав Go/Rust-программу на своей рабочей машине и скопировав её на другую, с более старой версией дистрибутива, есть большой шанс того, что она при запуске упадёт с ошибкой вида /lib/x86_64-linux-gnu/libc.so.6: version `GLIBC_2.38&#39; not found. Обычно разбираться всегда было некогда, и я просто пересобирал свою программу на нужной версии дистрибутива, но вот тут стало интересно – и я пошёл посмотреть, как скомпилить свою Rust&rsquo;овую программу статически с glibc, чтобы не иметь таких проблем." />
+<meta property="og:title" content="Проблемы обратной совместимости glibc | Dmitry Konishchev&#39;s small blog" />
 <meta property="og:description" content="В своей работе я не раз сталкивался с тем, что, собрав Go/Rust-программу на своей рабочей машине и скопировав её на другую, с более старой версией дистрибутива, есть большой шанс того, что она при запуске упадёт с ошибкой вида /lib/x86_64-linux-gnu/libc.so.6: version `GLIBC_2.38&#39; not found. Обычно разбираться всегда было некогда, и я просто пересобирал свою программу на нужной версии дистрибутива, но вот тут стало интересно – и я пошёл посмотреть, как скомпилить свою Rust&rsquo;овую программу статически с glibc, чтобы не иметь таких проблем." />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://konishchev.ru/posts/glibc-static-linking/" /><meta property="article:section" content="posts" />
-<meta property="article:published_time" content="2024-03-27T21:57:31+03:00" />
-<meta property="article:modified_time" content="2024-03-31T20:14:29+03:00" />
-
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="Проблемы обратной совместимости glibc"/>
-<meta name="twitter:description" content="В своей работе я не раз сталкивался с тем, что, собрав Go/Rust-программу на своей рабочей машине и скопировав её на другую, с более старой версией дистрибутива, есть большой шанс того, что она при запуске упадёт с ошибкой вида /lib/x86_64-linux-gnu/libc.so.6: version `GLIBC_2.38&#39; not found. Обычно разбираться всегда было некогда, и я просто пересобирал свою программу на нужной версии дистрибутива, но вот тут стало интересно – и я пошёл посмотреть, как скомпилить свою Rust&rsquo;овую программу статически с glibc, чтобы не иметь таких проблем."/>
+<meta property="og:url" content="https://konishchev.ru/posts/glibc-static-linking/" />
+<meta property="article:section" content="posts" />
+  <meta property="article:published_time" content="2024-03-27T21:57:31&#43;03:00" />
+  <meta property="article:modified_time" content="2024-03-31T20:14:29&#43;03:00" />
 
 
 <script type="application/ld+json">
@@ -78,13 +50,12 @@
 {
   "@context": "https://schema.org",
   "@type": "BlogPosting",
-  "headline": "Проблемы обратной совместимости glibc",
+  "headline": "Проблемы обратной совместимости glibc | Dmitry Konishchev's small blog",
   "name": "Проблемы обратной совместимости glibc",
   "description": "В своей работе я не раз сталкивался с тем, что, собрав Go/Rust-программу на своей рабочей машине и скопировав её на другую, с более старой версией дистрибутива, есть большой шанс того, что она при запуске упадёт с ошибкой вида /lib/x86_64-linux-gnu/libc.so.6: version `GLIBC_2.38' not found. Обычно разбираться всегда было некогда, и я просто пересобирал свою программу на нужной версии дистрибутива, но вот тут стало интересно – и я пошёл посмотреть, как скомпилить свою Rust\u0026rsquo;овую программу статически с glibc, чтобы не иметь таких проблем.",
   "keywords": [
     
   ],
-  "articleBody": "В своей работе я не раз сталкивался с тем, что, собрав Go/Rust-программу на своей рабочей машине и скопировав её на другую, с более старой версией дистрибутива, есть большой шанс того, что она при запуске упадёт с ошибкой вида /lib/x86_64-linux-gnu/libc.so.6: version `GLIBC_2.38' not found. Обычно разбираться всегда было некогда, и я просто пересобирал свою программу на нужной версии дистрибутива, но вот тут стало интересно – и я пошёл посмотреть, как скомпилить свою Rust’овую программу статически с glibc, чтобы не иметь таких проблем. В результате узнал для себя что-то новое и делюсь своими находками:\nglibc Первая мысль была довольно предсказуемой и понятной: “пойду-ка посмотрю, как собрать статически Rust’овый crate с glibc” – и, на самом деле, особых проблем с этим нет. Надо всего лишь сделать вот так:\nRUSTFLAGS='-C target-feature=+crt-static' cargo build --release --target x86_64-unknown-linux-gnu – и оно работает, программа запускается без проблем!\nНо, если покопать эту тему чуть более подробно, то выясняется, что решение это – на самом деле не очень хорошее. Всё дело в том, что glibc так устроена, что она в принципе не особо предназначена для статической линковки: из-за NSS, iconv(3) и пр. она полагается на dlopen(3), и определённые функции стандартной библиотеки могут стриггерить, скажем, загрузку NSS-модуля, который является динамически разделяемой библиотекой, к тому же динамически слинкованной с glibc, что в свою очередь может привести к ситуации, когда у нас в адресном пространстве приложения будут загружены две glibc: статическая и динамически подгруженная через зависимость NSS-модуля, что в итоге может привести к разным интересным последствиям (скажем, как они будут делить буферы stdout?). Внутри неё на самом деле есть различные подпорки, чтобы статическая сборка всё-таки нормально работала в большинстве случаев, но вот только гарантий, что она будет работать во всех возможных сценариях – нет.\nВ итоге, большинство людей сходятся в том, что статическую сборку с glibc лучше не использовать, т. к. мы тут идём против её дизайна и рискуем получить неожиданные последствия от таких действий. И самый оптимальный вариант тут – использовать для сборки Docker-контейнер с каким-нибудь заведомо не самым свежим LTS-дистрибутивом – и линковаться против glibc его версии.\nНо также есть и другие варианты.\nmusl Напомню, что Linux – это только ядро, а не операционная система. Интерфейсом к ядру являются системные вызовы, ABI которых стабильно, и поэтому ничто не мешает нам вместо glibc использовать что-то другое. Наиболее распространённом вариантом в данном случае является musl.\nЧестно говоря, я musl до этого момента ни разу не пользовался, т. к. мне всегда казалось довольно странным использовать что-то нестандартное вместо glibc – обязательно ведь где-нибудь что-нибудь будет работать по-другому и можно нарваться на какие-нибудь неприятные сюрпризы в самый неподходящий на то момент. Поэтому всегда считал, что её использование имеет смысл разве что в embedded, либо где-нибудь вроде Alpine, где нам по какой-то причине хочется получить максимально компактный образ.\nНо если смотреть с позиции статической линковки, использование musl вполне имеет смысл, т. к. для неё, в отличие от glibc, статическая линковка является абсолютно стандартным вариантом использования.\nПоэтому (в случае Rust) выполняем:\nrustup target add x86_64-unknown-linux-musl cargo build --target x86_64-unknown-linux-musl – и получаем то, что нам нужно. Правда, свои “но” тут тоже есть…\nmusl ставит своей целью быть компактной и простой в реализации, и, как это часто бывает, когда кто-то ставит себе такую цель, порой оказывается, что некоторые вещи в принципе не должны быть простыми, и слишком простая их реализация приводит к проблемам.\nВ результате чего нередки ситуации, когда наша программа, которая без проблем работала с glibc, почему-то перестала работать из-за того, что в musl DNS resolver не поддерживает ответы с большим количеством записей (на самом деле уже исправлено), либо работает в десятки (!) раз медленнее – раз, два, три (как правило в случае интенсивной аллокации памяти из нескольких потоков одновременно, но также это может быть связано с тем что “раздутая” glibc использует AVX и прочие инструкции для оптимизации своих функций, а “простая и компактная” musl – нет), либо у вас какая-то специфическая конфигурация, в которой проявляются отличия в реализации glibc и musl. Ну и, понятное дело, musl не подойдет, если вам нужен NSS (к примеру, в случае с LDAP).\nВ итоге, я бы сказал, что если у вас в качестве приложения довольно простая command line-утилита, то скорее всего проблем не будет, но если у вас какой-то навороченный/высоконагруженный сервис, то либо стоит быть готовым к сюрпризам, либо использовать более сложную конфигурацию вроде musl + mimalloc/jemalloc в качестве аллокатора.\nEyra Если говорить о Rust, то на самом деле есть ещё один интересный вариант – Eyra. Данный проект ставит своей целью реализовать все функции стандартной библиотеки на Rust и линковаться в процессе сборки с ними.\nЭтот вариант я, честно говоря, даже не пробовал (уж больно молодой проект), но идея интересная и многообещающая.\nИнтересный факт Я этого не знал, но, оказывается, ABI системных вызовов стабильный только у Linux. В Windows и MacOS он может меняться абсолютно непредсказуемым образом (даже в минорных версиях), и стабильным является только API стандартной библиотеки (ntdll.dll в Windows и libSystem.dylib в MacOS). И там такой опции у нас вовсе нет.\nGo даже поначалу пытался идти тут против течения, но в итоге сдался.\n",
   "wordCount" : "826",
   "inLanguage": "ru",
   "datePublished": "2024-03-27T21:57:31+03:00",
@@ -103,32 +74,58 @@
   }
 }
 </script>
+<script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();
+    for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+    k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(96897335, "init", {
+        clickmap:true,
+        trackLinks:true,
+        accurateTrackBounce:true
+    });
+</script>
+<noscript><div><img src="https://mc.yandex.ru/watch/96897335" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+</noscript>
+
 </head>
 
-<body class="" id="top">
+<body class=" type-posts kind-page layout-" id="top">
 
 <header class="header">
     <nav class="nav">
         <div class="logo">
             <a href="https://konishchev.ru/" accesskey="h" title="Dmitry Konishchev&#39;s small blog (Alt + H)">Dmitry Konishchev&#39;s small blog</a>
-            <div class="logo-switches">
-            </div>
+            <span class="logo-switches">
+            </span>
         </div>
         <ul id="menu">
         </ul>
     </nav>
 </header>
-<main class="main">
+<main class="main post">
 
 <article class="post-single">
   <header class="post-header">
-    
-    <h1 class="post-title entry-hint-parent">
-      Проблемы обратной совместимости glibc
-    </h1>
-    <div class="post-meta"><span title='2024-03-27 21:57:31 +0300 MSK'>27 марта 2024</span>
+    <h1 class="post-title">Проблемы обратной совместимости glibc</h1>
+    <div class="post-meta"><span class="meta-item">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-calendar" style="user-select: text;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" style="user-select: text;"></rect><line x1="16" y1="2" x2="16" y2="6" style="user-select: text;"></line><line x1="8" y1="2" x2="8" y2="6" style="user-select: text;"></line><line x1="3" y1="10" x2="21" y2="10" style="user-select: text;"></line></svg>
+  <span>27 марта 2024</span></span>
 
-</div>
+      
+      
+    </div>
   </header> <div class="toc">
     <details  open>
         <summary accesskey="c" title="(Alt + C)">
@@ -151,28 +148,28 @@
 </div>
 
   <div class="post-content"><p>В своей работе я не раз сталкивался с тем, что, собрав Go/Rust-программу на своей рабочей машине и скопировав её на другую, с более старой версией дистрибутива, есть большой шанс того, что она при запуске упадёт с ошибкой вида <code>/lib/x86_64-linux-gnu/libc.so.6: version `GLIBC_2.38' not found</code>. Обычно разбираться всегда было некогда, и я просто пересобирал свою программу на нужной версии дистрибутива, но вот тут стало интересно – и я пошёл посмотреть, как скомпилить свою Rust&rsquo;овую программу статически с glibc, чтобы не иметь таких проблем. В результате узнал для себя что-то новое и делюсь своими находками:</p>
-<h2 id="glibc">glibc<a hidden class="anchor" aria-hidden="true" href="#glibc">#</a></h2>
+<h2 id="glibc">glibc<a hidden class="anchor" aria-hidden="true" href="#glibc">¶</a></h2>
 <p>Первая мысль была довольно предсказуемой и понятной: &ldquo;пойду-ка посмотрю, как собрать статически Rust&rsquo;овый crate с glibc&rdquo; – и, на самом деле, особых проблем с этим нет. Надо всего лишь сделать вот так:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>RUSTFLAGS<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;-C target-feature=+crt-static&#39;</span> cargo build --release --target x86_64-unknown-linux-gnu
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>RUSTFLAGS=<span style="color:#a31515">&#39;-C target-feature=+crt-static&#39;</span> cargo build --release --target x86_64-unknown-linux-gnu
 </span></span></code></pre></div><p>– и оно работает, программа запускается без проблем!</p>
 <p>Но, если покопать эту тему чуть более подробно, то выясняется, что решение это – на самом деле не очень хорошее. Всё дело в том, что glibc так устроена, что она в принципе не особо предназначена для статической линковки: из-за <a href="http://man7.org/linux/man-pages/man5/nsswitch.conf.5.html">NSS</a>, <a href="http://man7.org/linux/man-pages/man3/iconv.3.html"><code>iconv(3)</code></a> и пр. она полагается на <a href="http://man7.org/linux/man-pages/man3/dlopen.3.html"><code>dlopen(3)</code></a>, и определённые функции стандартной библиотеки могут стриггерить, скажем, загрузку NSS-модуля, который является динамически разделяемой библиотекой, к тому же динамически слинкованной с glibc, что в свою очередь может привести к ситуации, когда у нас в адресном пространстве приложения будут загружены две glibc: статическая и динамически подгруженная через зависимость NSS-модуля, что в итоге может привести к разным интересным последствиям (скажем, как они будут делить буферы <code>stdout</code>?). Внутри неё на самом деле есть различные подпорки, чтобы статическая сборка всё-таки нормально работала в большинстве случаев, но вот только гарантий, что она будет работать во всех возможных сценариях – нет.</p>
 <p>В итоге, большинство людей сходятся в том, что статическую сборку с glibc лучше не использовать, т. к. мы тут идём против её дизайна и рискуем получить неожиданные последствия от таких действий. И самый оптимальный вариант тут – использовать для сборки Docker-контейнер с каким-нибудь заведомо не самым свежим LTS-дистрибутивом – и линковаться против glibc его версии.</p>
 <p>Но также есть и другие варианты.</p>
-<h2 id="musl">musl<a hidden class="anchor" aria-hidden="true" href="#musl">#</a></h2>
+<h2 id="musl">musl<a hidden class="anchor" aria-hidden="true" href="#musl">¶</a></h2>
 <p>Напомню, что Linux – это только ядро, а не операционная система. Интерфейсом к ядру являются системные вызовы, ABI которых стабильно, и поэтому ничто не мешает нам вместо glibc использовать что-то другое. Наиболее распространённом вариантом в данном случае является <a href="https://musl.libc.org/">musl</a>.</p>
 <p>Честно говоря, я musl до этого момента ни разу не пользовался, т. к. мне всегда казалось довольно странным использовать что-то нестандартное вместо glibc – обязательно ведь где-нибудь что-нибудь будет работать по-другому и можно нарваться на какие-нибудь неприятные сюрпризы в самый неподходящий на то момент. Поэтому всегда считал, что её использование имеет смысл разве что в embedded, либо где-нибудь вроде <a href="https://www.alpinelinux.org/">Alpine</a>, где нам по какой-то причине хочется получить максимально компактный образ.</p>
 <p>Но если смотреть с позиции статической линковки, использование musl вполне имеет смысл, т. к. для неё, в отличие от glibc, статическая линковка является абсолютно стандартным вариантом использования.</p>
 <p>Поэтому (в случае Rust) выполняем:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>rustup target add x86_64-unknown-linux-musl
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>rustup target add x86_64-unknown-linux-musl
 </span></span><span style="display:flex;"><span>cargo build --target x86_64-unknown-linux-musl
 </span></span></code></pre></div><p>– и получаем то, что нам нужно. Правда, свои &ldquo;но&rdquo; тут тоже есть&hellip;</p>
 <p>musl ставит своей целью быть компактной и простой в реализации, и, как это часто бывает, когда кто-то ставит себе такую цель, порой оказывается, что некоторые вещи в принципе не должны быть простыми, и слишком простая их реализация приводит к проблемам.</p>
 <p>В результате чего нередки ситуации, когда наша программа, которая без проблем работала с glibc, почему-то перестала работать из-за того, что <a href="https://purplecarrot.co.uk/post/2021-09-04-does_alpine-resolve_dns_properly/">в musl DNS resolver не поддерживает ответы с большим количеством записей</a> (на самом деле уже <a href="https://www.furorteutonicus.eu/2023-10-02-musl-alpine-dns">исправлено</a>), либо работает в десятки (!) раз медленнее – <a href="https://www.linkedin.com/pulse/testing-alternative-c-memory-allocators-pt-2-musl-mystery-gomes/">раз</a>, <a href="https://andygrove.io/2020/05/why-musl-extremely-slow/">два</a>, <a href="https://twitter.com/theomn/status/1149853793636368384">три</a> (как правило в случае интенсивной аллокации памяти из нескольких потоков одновременно, но также это может быть связано с тем что &ldquo;раздутая&rdquo; glibc использует AVX и прочие инструкции для оптимизации своих функций, а &ldquo;простая и компактная&rdquo; musl – нет), либо у вас какая-то специфическая конфигурация, в которой проявляются <a href="https://github.com/gliderlabs/docker-alpine/blob/460819debdada8db435a3619c688a702bdd3420b/docs/caveats.md">отличия в реализации glibc и musl</a>. Ну и, понятное дело, musl не подойдет, если вам нужен NSS (к примеру, в случае с LDAP).</p>
 <p>В итоге, я бы сказал, что если у вас в качестве приложения довольно простая command line-утилита, то скорее всего проблем не будет, но если у вас какой-то навороченный/высоконагруженный сервис, то либо стоит быть готовым к сюрпризам, либо использовать более сложную конфигурацию вроде musl + <a href="https://github.com/microsoft/mimalloc">mimalloc</a>/<a href="https://jemalloc.net/">jemalloc</a> в качестве аллокатора.</p>
-<h2 id="eyra">Eyra<a hidden class="anchor" aria-hidden="true" href="#eyra">#</a></h2>
+<h2 id="eyra">Eyra<a hidden class="anchor" aria-hidden="true" href="#eyra">¶</a></h2>
 <p>Если говорить о Rust, то на самом деле есть ещё один интересный вариант – <a href="https://github.com/sunfishcode/eyra/">Eyra</a>. Данный проект ставит своей целью реализовать все функции стандартной библиотеки на Rust и линковаться в процессе сборки с ними.</p>
 <p>Этот вариант я, честно говоря, даже не пробовал (уж больно молодой проект), но идея интересная и многообещающая.</p>
-<h2 id="интересный-факт">Интересный факт<a hidden class="anchor" aria-hidden="true" href="#интересный-факт">#</a></h2>
+<h2 id="интересный-факт">Интересный факт<a hidden class="anchor" aria-hidden="true" href="#интересный-факт">¶</a></h2>
 <p>Я этого не знал, но, оказывается, ABI системных вызовов стабильный только у Linux. В Windows и MacOS он может меняться абсолютно непредсказуемым образом (даже в минорных версиях), и стабильным является только API стандартной библиотеки (<code>ntdll.dll</code> в Windows и <code>libSystem.dylib</code> в MacOS). И там такой опции у нас вовсе нет.</p>
 <p>Go даже поначалу пытался идти тут против течения, но в итоге <a href="https://golang.org/doc/go1.11#runtime">сдался</a>.</p>
 
@@ -180,115 +177,207 @@
   </div>
 
   <footer class="post-footer">
-    <ul class="post-tags">
-    </ul>
   </footer>
+    <div class="comments-separator"></div>
 </article>
     </main>
     
 <footer class="footer">
-    <span>© <a href="mailto:konishchev@gmail.com">Dmitry Konishchev</a></span>
-    <span>
-        Powered by
-        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
-        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
-    </span>
+  <span>&copy; 2024 <a href="https://konishchev.ru/">Dmitry Konishchev&#39;s small blog</a></span><span style="display: inline-block; margin-left: 1em;">
+    <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA</a>
+  </span>
+  <span style="display: inline-block; margin-left: 1em;">
+    Powered by
+    <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+    <a href="https://github.com/reorx/hugo-PaperModX/" rel="noopener" target="_blank">PaperModX</a>
+  </span>
 </footer>
 <a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
-        <path d="M12 6H0l6-6z" />
-    </svg>
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+    <path d="M12 6H0l6-6z" />
+  </svg>
 </a>
 
 <script>
+  (function () {
     let menu = document.getElementById('menu')
     if (menu) {
-        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
-        menu.onscroll = function () {
-            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
-        }
+      menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+      menu.onscroll = function () {
+        localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+      }
     }
 
+    const disableSmoothScroll = '' == '1';
+    const enableInstantClick = '' == '1';
+    
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || disableSmoothScroll || enableInstantClick) {
+      return;
+    }
+    
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener("click", function (e) {
-            e.preventDefault();
-            var id = this.getAttribute("href").substr(1);
-            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
-                    behavior: "smooth"
-                });
-            } else {
-                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
-            }
-            if (id === "top") {
-                history.replaceState(null, null, " ");
-            } else {
-                history.pushState(null, null, `#${id}`);
-            }
+      anchor.addEventListener("click", function (e) {
+        e.preventDefault();
+        var id = this.getAttribute("href").substr(1);
+        document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+          behavior: "smooth"
         });
+        if (id === "top") {
+          history.replaceState(null, null, " ");
+        } else {
+          history.pushState(null, null, `#${id}`);
+        }
+      });
     });
-
+  })();
 </script>
 <script>
-    var mybutton = document.getElementById("top-link");
-    window.onscroll = function () {
-        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
-            mybutton.style.visibility = "visible";
-            mybutton.style.opacity = "1";
-        } else {
-            mybutton.style.visibility = "hidden";
-            mybutton.style.opacity = "0";
-        }
-    };
-
+  var mybutton = document.getElementById("top-link");
+  window.onscroll = function () {
+    if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+      mybutton.style.visibility = "visible";
+      mybutton.style.opacity = "1";
+    } else {
+      mybutton.style.visibility = "hidden";
+      mybutton.style.opacity = "0";
+    }
+  };
 </script>
 <script>
-    document.querySelectorAll('pre > code').forEach((codeblock) => {
-        const container = codeblock.parentNode.parentNode;
-
-        const copybutton = document.createElement('button');
-        copybutton.classList.add('copy-code');
-        copybutton.innerHTML = 'копировать';
-
-        function copyingDone() {
-            copybutton.innerHTML = 'скопировано!';
-            setTimeout(() => {
-                copybutton.innerHTML = 'копировать';
-            }, 2000);
-        }
-
-        copybutton.addEventListener('click', (cb) => {
-            if ('clipboard' in navigator) {
-                navigator.clipboard.writeText(codeblock.textContent);
-                copyingDone();
-                return;
-            }
-
-            const range = document.createRange();
-            range.selectNodeContents(codeblock);
-            const selection = window.getSelection();
-            selection.removeAllRanges();
-            selection.addRange(range);
-            try {
-                document.execCommand('copy');
-                copyingDone();
-            } catch (e) { };
-            selection.removeRange(range);
-        });
-
-        if (container.classList.contains("highlight")) {
-            container.appendChild(copybutton);
-        } else if (container.parentNode.firstChild == container) {
-            
-        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
-            
-            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
-        } else {
-            
-            codeblock.parentNode.appendChild(copybutton);
-        }
-    });
+  if (window.scrollListeners) {
+    
+    for (const listener of scrollListeners) {
+      window.removeEventListener('scroll', listener)
+    }
+  }
+  window.scrollListeners = []
 </script>
+
+
+
+<script src="/js/medium-zoom.min.js" data-no-instant
+></script>
+<script>
+  document.querySelectorAll('pre > code').forEach((codeblock) => {
+    const container = codeblock.parentNode.parentNode;
+
+    const copybutton = document.createElement('button');
+    copybutton.classList.add('copy-code');
+    copybutton.innerText = 'копировать';
+
+    function copyingDone() {
+      copybutton.innerText = 'скопировано!';
+      setTimeout(() => {
+        copybutton.innerText = 'копировать';
+      }, 2000);
+    }
+
+    copybutton.addEventListener('click', (cb) => {
+      if ('clipboard' in navigator) {
+        navigator.clipboard.writeText(codeblock.textContent);
+        copyingDone();
+        return;
+      }
+
+      const range = document.createRange();
+      range.selectNodeContents(codeblock);
+      const selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+      try {
+        document.execCommand('copy');
+        copyingDone();
+      } catch (e) { };
+      selection.removeRange(range);
+    });
+
+    if (container.classList.contains("highlight")) {
+      container.appendChild(copybutton);
+    } else if (container.parentNode.firstChild == container) {
+      
+    } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+      
+      codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+    } else {
+      
+      codeblock.parentNode.appendChild(copybutton);
+    }
+  });
+</script>
+
+
+
+
+<script>
+  
+  
+  (function() {
+    const enableTocScroll = '' == '1'
+    if (!enableTocScroll) {
+      return
+    }
+    if (!document.querySelector('.toc')) {
+      console.log('no toc found, ignore toc scroll')
+      return
+    }
+    
+
+    
+    const scrollListeners = window.scrollListeners
+    const headings = document.querySelectorAll('h1[id],h2[id],h3[id],h4[id],h5[id]');
+    const activeClass = 'active';
+
+    
+    let activeHeading = headings[0];
+    getLinkByHeading(activeHeading).classList.add(activeClass);
+
+    const onScroll = () => {
+      const passedHeadings = [];
+      for (const h of headings) {
+        
+        if (getOffsetTop(h) < 5) {
+          passedHeadings.push(h)
+        } else {
+          break;
+        }
+      }
+      if (passedHeadings.length > 0) {
+        newActiveHeading = passedHeadings[passedHeadings.length - 1];
+      } else {
+        newActiveHeading = headings[0];
+      }
+      if (activeHeading != newActiveHeading) {
+        getLinkByHeading(activeHeading).classList.remove(activeClass);
+        activeHeading = newActiveHeading;
+        getLinkByHeading(activeHeading).classList.add(activeClass);
+      }
+    }
+
+    let timer = null;
+    const scrollListener = () => {
+      if (timer !== null) {
+        clearTimeout(timer)
+      }
+      timer = setTimeout(onScroll, 50)
+    }
+    window.addEventListener('scroll', scrollListener, false);
+    scrollListeners.push(scrollListener)
+
+    function getLinkByHeading(heading) {
+      const id = encodeURI(heading.getAttribute('id')).toLowerCase();
+      return document.querySelector(`.toc ul li a[href="#${id}"]`);
+    }
+
+    function getOffsetTop(heading) {
+      if (!heading.getClientRects().length) {
+        return 0;
+      }
+      let rect = heading.getBoundingClientRect();
+      return rect.top
+    }
+  })();
+  </script>
+
 </body>
 
 </html>

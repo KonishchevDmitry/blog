@@ -3,7 +3,9 @@
 
 title: Dmitry Konishchev's small blog
 baseURL: https://konishchev.ru/
-copyright: "© [Dmitry Konishchev](mailto:konishchev@gmail.com)"
+
+# FIXME(konishchev): Enable?
+# copyright: "© [Dmitry Konishchev](mailto:konishchev@gmail.com)"
 
 languageCode: ru
 defaultContentLanguage: ru
@@ -11,11 +13,11 @@ defaultContentLanguage: ru
 # We don't use tags and categories, so don't generate them
 disableKinds: ["taxonomy"]
 
-theme: papermod
+theme: papermodx
 # FIXME(konishchev): Change style after theme tunning
-# markup:
-#   highlight:
-#     style: vs
+markup:
+  highlight:
+    style: vs
 
 enableGitInfo: true
 cleanDestinationDir: true
