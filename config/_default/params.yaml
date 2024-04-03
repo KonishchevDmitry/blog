@@ -11,8 +11,20 @@ tocOpen: true
 
 # FIXME(konishchev): Later:
 # tocSide: right
-# socialIcons:
 # editPost:
 #   URL: "https://github.com/<path_to_repo>/content"
 #   Text: "Suggest Changes"
 #   appendFilePath: true
+
+socialIcons:
+  - name: Email
+    url: mailto:konishchev@gmail.com
+
+  - name: GitHub
+    url: https://github.com/KonishchevDmitry
+
+  - name: LinkedIn
+    url: https://www.linkedin.com/in/konishchev/
+
+  - name: RSS
+    url: /index.xml
