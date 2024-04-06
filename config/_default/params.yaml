@@ -27,4 +27,4 @@ socialIcons:
     url: https://www.linkedin.com/in/konishchev/
 
   - name: RSS
-    url: /index.xml
+    url: /rss.xml

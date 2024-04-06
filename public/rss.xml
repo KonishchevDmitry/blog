@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
   <channel>
-    <title>Posts on Dmitry Konishchev&#39;s small blog</title>
-    <link>https://konishchev.ru/posts/</link>
-    <description>Recent content in Posts on Dmitry Konishchev&#39;s small blog</description>
+    <title>Dmitry Konishchev&#39;s small blog</title>
+    <link>https://konishchev.ru/</link>
+    <description>Recent content on Dmitry Konishchev&#39;s small blog</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>ru</language>
     <lastBuildDate>Sat, 06 Apr 2024 16:27:29 +0300</lastBuildDate>
-    <atom:link href="https://konishchev.ru/posts/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="https://konishchev.ru/rss.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Проблемы обратной совместимости glibc</title>
       <link>https://konishchev.ru/posts/glibc-static-linking/</link>

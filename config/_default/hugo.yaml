@@ -15,5 +15,9 @@ markup:
   highlight:
     style: vs
 
+outputFormats:
+  rss:
+    baseName: rss
+
 enableGitInfo: true
 cleanDestinationDir: true
