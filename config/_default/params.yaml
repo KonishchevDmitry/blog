@@ -8,13 +8,7 @@ showFullTextInRSS: true
 
 showToc: true
 tocOpen: true
-
-# FIXME(konishchev): Later:
-# tocSide: right
-# editPost:
-#   URL: "https://github.com/<path_to_repo>/content"
-#   Text: "Suggest Changes"
-#   appendFilePath: true
+tocSide: right
 
 socialIcons:
   - name: Email
