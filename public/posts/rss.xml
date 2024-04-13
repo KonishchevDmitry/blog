@@ -6,8 +6,44 @@
     <description>Recent content in Posts on Dmitry Konishchev&#39;s small blog</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>ru</language>
-    <lastBuildDate>Sat, 06 Apr 2024 21:42:40 +0300</lastBuildDate>
+    <lastBuildDate>Mon, 08 Apr 2024 19:35:58 +0300</lastBuildDate>
     <atom:link href="https://konishchev.ru/posts/rss.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>gmailctl: наводим порядок в своей почте</title>
+      <link>https://konishchev.ru/posts/gmailctl/</link>
+      <pubDate>Mon, 08 Apr 2024 19:25:58 +0300</pubDate>
+      
+      <guid>https://konishchev.ru/posts/gmailctl/</guid>
+      <description>У меня довольно большое количество фильтров в Gmail, которое уже давно не влезает на один экран монитора, и при этом интерфейс управления этими фильтрами в Gmail настолько примитивен, что не даёт абсолютно никаких возможностей их хоть как-то организовать. Поэтому каждый раз, когда раньше возникала необходимость добавить новый фильтр (а гораздо хуже – изменить существующий), я мысленно вздыхал – и шёл в этот ужасно неудобный интерфейс&amp;hellip; пока случайно не наткнулся на gmailctl.</description>
+      <content:encoded><![CDATA[<p>У меня довольно большое количество фильтров в Gmail, которое уже давно не влезает на один экран монитора, и при этом интерфейс управления этими фильтрами в Gmail настолько примитивен, что не даёт абсолютно никаких возможностей их хоть как-то организовать. Поэтому каждый раз, когда раньше возникала необходимость добавить новый фильтр (а гораздо хуже – изменить существующий), я мысленно вздыхал – и шёл в этот ужасно неудобный интерфейс&hellip; пока случайно не наткнулся на gmailctl.</p>
+<p><a href="https://github.com/mbrt/gmailctl">gmailctl</a> – это абсолютно потрясающая утилитка, которая позволяет вовсе не использовать web-интерфейс редактирования правил обработки почты и унести их в локальный конфиг. У неё свой язык описания правил (имеющий свои преимущества), который она затем преобразовывает в формат Gmail и заменяет все существующие фильтры на описанные в вашем конфиге (не забыв при этом показать аккуратный diff изменений).</p>
+<p>Правила могут быть как очень простые:</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-js" data-lang="js"><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>  filter: {from: <span style="color:#a31515">&#34;linkedin.com&#34;</span>},
+</span></span><span style="display:flex;"><span>  actions: label(<span style="color:#a31515">&#34;LinkedIn&#34;</span>),
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>так и довольно развесистые:</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-js" data-lang="js"><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>  filter: {or: [
+</span></span><span style="display:flex;"><span>    {and: [{from: <span style="color:#a31515">&#34;notifications@github.com&#34;</span>}, {subject: <span style="color:#a31515">&#34;[KonishchevDmitry/&#34;</span>}, {subject: <span style="color:#a31515">&#34;] Release&#34;</span>}]},
+</span></span><span style="display:flex;"><span>    {and: [{from: <span style="color:#a31515">&#34;cloud@support.yandex.ru&#34;</span>}, {or: [
+</span></span><span style="display:flex;"><span>      {subject: <span style="color:#a31515">&#34;You have been given a grant&#34;</span>},
+</span></span><span style="display:flex;"><span>      {subject: <span style="color:#a31515">&#34;Planned maintenance&#34;</span>},
+</span></span><span style="display:flex;"><span>    ]}]},
+</span></span><span style="display:flex;"><span>    {and: [{from: <span style="color:#a31515">&#34;noreply@market.yandex.ru&#34;</span>}, {or: [
+</span></span><span style="display:flex;"><span>      {subject: <span style="color:#a31515">&#34;Вы оформили и оплатили заказ&#34;</span>},
+</span></span><span style="display:flex;"><span>      {and: [{subject: <span style="color:#a31515">&#34;Заказ&#34;</span>}, {subject: <span style="color:#a31515">&#34;доставлен&#34;</span>}]},
+</span></span><span style="display:flex;"><span>    ]}]},
+</span></span><span style="display:flex;"><span>    {and: [{from: <span style="color:#a31515">&#34;mailer@sender.ozon.ru&#34;</span>}, {subject: <span style="color:#a31515">&#34;Вам понравился заказ?&#34;</span>}]},
+</span></span><span style="display:flex;"><span>    {and: [{from: <span style="color:#a31515">&#34;mosenergosbyt.ru&#34;</span>}, {subject: <span style="color:#a31515">&#34;Электронный счёт за&#34;</span>}]},
+</span></span><span style="display:flex;"><span>  ]},
+</span></span><span style="display:flex;"><span>  actions: <span style="color:#00f">delete</span>(),
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>Увидев это чудо, я в тот же день переколбасил все свои правила и полностью перешел на gmailctl. Они по-прежнему занимают несколько экранов монитора, но зато теперь их можно организовать удобным мне образом, объявлять функции и переменные, ставить комментарии, отделять отступами и т. п. В общем, всё как в любых нормальных декларативных языках.</p>
+<p>Крайне рекомендую. Невероятно полезная и удобная вещь для всех, у кого больше десятка фильтров в Gmail.</p>
+<div><img src="https://mc.yandex.ru/watch/96897335" alt="" /></div>]]></content:encoded>
+    </item>
+    
     <item>
       <title>Проблемы обратной совместимости glibc</title>
       <link>https://konishchev.ru/posts/glibc-static-linking/</link>
@@ -40,7 +76,7 @@
 <h2 id="интересный-факт">Интересный факт</h2>
 <p>Я этого не знал, но, оказывается, ABI системных вызовов стабильный только у Linux. В Windows и MacOS он может меняться абсолютно непредсказуемым образом (даже в минорных версиях), и стабильным является только API стандартной библиотеки (<code>ntdll.dll</code> в Windows и <code>libSystem.dylib</code> в MacOS). И там такой опции у нас вовсе нет.</p>
 <p>Go даже поначалу пытался идти тут против течения, но в итоге <a href="https://golang.org/doc/go1.11#runtime">сдался</a>.</p>
-]]></content:encoded>
+<div><img src="https://mc.yandex.ru/watch/96897335" alt="" /></div>]]></content:encoded>
     </item>
     
     <item>
@@ -54,7 +90,7 @@
       <content:encoded><![CDATA[<p>Больше 11 лет прошло с момента моего последнего поста в блоге <a href="https://konishchevdmitry.blogspot.com/">KonishchevDmitry&rsquo;s small blog</a>, который я вёл когда-то давно и достаточно активно.</p>
 <p>И вот какое-то время назад появилось желание попробовать его возродить в том или ином виде, т. к. всё равно время от времени появляются мысли, которыми хотелось бы поделиться в силу того, что они могут быть кому-то полезны. Причём, сейчас такое интересное время, что даже если твой пост не смог пробиться сквозь поисковую выдачу, то кто знает – может какая-то его часть сможет обогатить базу знаний условного ChatGPT, и он потом на какие-то вопросы будет отвечать в своей уверенной манере фразами из твоего блога, тем самым таргетированно нанося кому-то пользу. :)</p>
 <p>Свободного времени у меня теперь заметно меньше чем раньше, и вряд ли я буду писать сюда часто, но раз желание появилось – то надо попробовать, а там уж посмотрим, что из этого выйдет.</p>
-]]></content:encoded>
+<div><img src="https://mc.yandex.ru/watch/96897335" alt="" /></div>]]></content:encoded>
     </item>
     
   </channel>
