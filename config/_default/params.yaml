@@ -10,6 +10,11 @@ showToc: true
 tocOpen: true
 tocSide: right
 
+editPost:
+  url: https://github.com/KonishchevDmitry/blog/tree/master/content
+  text: Исправить опечатку
+  appendFilePath: true
+
 socialIcons:
   - name: Email
     url: mailto:konishchev@gmail.com
