@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="ru" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>BBR: когда TCP &#34;быстрее&#34; UDP | Dmitry Konishchev&#39;s small blog</title>
+<meta name="keywords" content="">
+<meta name="description" content="Некоторое время назад, в связи со всем известными событиями, я решил защитить свой текущий тоннель до VPS в Нидерландах, для которого до этого использовал обычный WireGuard. Как это часто со мной бывает, я решил пойти не самым простым, но зато самым любимым мной путём – и написал свой тоннель. :) Идея эта была привлекательна тем, что давала мне возможность познакомиться с Tokio, побольше узнать о принципах работы tun/tap–интерфейсов в Linux, почитать исходники Shadowsocks, ну и в процессе даже удалось найти и поправить небольшую багу в networkd.">
+<meta name="author" content="">
+<link rel="canonical" href="https://konishchev.ru/posts/tcp-bbr/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.min.e58ff1c2ed7b561d7cbf35dec9e657d9587121c41bdf9046fff790336878a545.css" integrity="sha256-5Y/xwu17Vh18vzXeyeZX2VhxIcQb35BG//eQM2h4pUU=" rel="preload stylesheet" as="style">
+
+<!-- Console icon by Icons8 (https://icons8.com/icon/pSUzrDn0xTlh/console) -->
+
+<link rel="icon" type="image/png" sizes="16x16" href="/images/favicon/16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/images/favicon/32.png">
+<link rel="icon" type="image/png" sizes="72x72" href="/images/favicon/72.png">
+<link rel="icon" type="image/png" sizes="96x96" href="/images/favicon/96.png">
+
+<link rel="apple-touch-icon" type="image/png" sizes="57x57" href="/images/favicon/57.png">
+<link rel="apple-touch-icon" type="image/png" sizes="60x60" href="/images/favicon/60.png">
+<link rel="apple-touch-icon" type="image/png" sizes="72x72" href="/images/favicon/72.png">
+<link rel="apple-touch-icon" type="image/png" sizes="76x76" href="/images/favicon/76.png">
+
+
+<link rel="alternate" hreflang="ru" href="https://konishchev.ru/posts/tcp-bbr/">
+
+<meta name="twitter:title" content="BBR: когда TCP &#34;быстрее&#34; UDP | Dmitry Konishchev&#39;s small blog" />
+<meta name="twitter:description" content="Некоторое время назад, в связи со всем известными событиями, я решил защитить свой текущий тоннель до VPS в Нидерландах, для которого до этого использовал обычный WireGuard. Как это часто со мной бывает, я решил пойти не самым простым, но зато самым любимым мной путём – и написал свой тоннель. :) Идея эта была привлекательна тем, что давала мне возможность познакомиться с Tokio, побольше узнать о принципах работы tun/tap–интерфейсов в Linux, почитать исходники Shadowsocks, ну и в процессе даже удалось найти и поправить небольшую багу в networkd." />
+<meta property="og:title" content="BBR: когда TCP &#34;быстрее&#34; UDP | Dmitry Konishchev&#39;s small blog" />
+<meta property="og:description" content="Некоторое время назад, в связи со всем известными событиями, я решил защитить свой текущий тоннель до VPS в Нидерландах, для которого до этого использовал обычный WireGuard. Как это часто со мной бывает, я решил пойти не самым простым, но зато самым любимым мной путём – и написал свой тоннель. :) Идея эта была привлекательна тем, что давала мне возможность познакомиться с Tokio, побольше узнать о принципах работы tun/tap–интерфейсов в Linux, почитать исходники Shadowsocks, ну и в процессе даже удалось найти и поправить небольшую багу в networkd." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://konishchev.ru/posts/tcp-bbr/" />
+<meta property="article:section" content="posts" />
+  <meta property="article:published_time" content="2024-04-19T21:25:58&#43;03:00" />
+  <meta property="article:modified_time" content="2024-04-19T21:25:58&#43;03:00" />
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "Posts",
+      "item": "https://konishchev.ru/posts/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "BBR: когда TCP \"быстрее\" UDP",
+      "item": "https://konishchev.ru/posts/tcp-bbr/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "BBR: когда TCP \"быстрее\" UDP | Dmitry Konishchev's small blog",
+  "name": "BBR: когда TCP \u0022быстрее\u0022 UDP",
+  "description": "Некоторое время назад, в связи со всем известными событиями, я решил защитить свой текущий тоннель до VPS в Нидерландах, для которого до этого использовал обычный WireGuard. Как это часто со мной бывает, я решил пойти не самым простым, но зато самым любимым мной путём – и написал свой тоннель. :) Идея эта была привлекательна тем, что давала мне возможность познакомиться с Tokio, побольше узнать о принципах работы tun/tap–интерфейсов в Linux, почитать исходники Shadowsocks, ну и в процессе даже удалось найти и поправить небольшую багу в networkd.",
+  "keywords": [
+    
+  ],
+  "wordCount" : "1283",
+  "inLanguage": "ru",
+  "datePublished": "2024-04-19T21:25:58+03:00",
+  "dateModified": "2024-04-19T21:25:58+03:00",
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://konishchev.ru/posts/tcp-bbr/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Dmitry Konishchev's small blog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://konishchev.ru/favicon.ico"
+    }
+  }
+}
+</script>
+<script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();
+    for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+    k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(96897335, "init", {
+        clickmap:true,
+        trackLinks:true,
+        accurateTrackBounce:true
+    });
+</script>
+<noscript><div><img src="https://mc.yandex.ru/watch/96897335" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+</noscript>
+
+</head>
+
+<body class=" type-posts kind-page layout-" id="top">
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://konishchev.ru/" accesskey="h" title="Dmitry Konishchev&#39;s small blog (Alt + H)">Dmitry Konishchev&#39;s small blog</a>
+            <span class="logo-switches">
+            </span>
+        </div>
+        <ul id="menu">
+        </ul>
+    </nav>
+</header>
+<main class="main post">
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">BBR: когда TCP &#34;быстрее&#34; UDP</h1>
+    <div class="post-meta"><span class="meta-item">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-calendar" style="user-select: text;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" style="user-select: text;"></rect><line x1="16" y1="2" x2="16" y2="6" style="user-select: text;"></line><line x1="8" y1="2" x2="8" y2="6" style="user-select: text;"></line><line x1="3" y1="10" x2="21" y2="10" style="user-select: text;"></line></svg>
+  <span>19 апреля 2024</span></span>
+
+      
+      
+    </div>
+  </header> <div class="toc side right">
+    <details  open>
+        <summary accesskey="c" title="(Alt + C)">
+            <span class="details">Оглавление</span>
+        </summary>
+
+        <div class="inner"><ul>
+                <li>
+                    <a href="#bbr" aria-label="BBR">BBR</a></li>
+                <li>
+                    <a href="#%d0%ba%d1%80%d0%b8%d1%82%d0%b8%d0%ba%d0%b0" aria-label="Критика">Критика</a></li>
+                <li>
+                    <a href="#%d1%8d%d1%84%d1%84%d0%b5%d0%ba%d1%82-%d0%be%d1%82-bbr-%d0%bf%d1%80%d0%b8%d0%bc%d0%b5%d0%bd%d0%b8%d1%82%d0%b5%d0%bb%d1%8c%d0%bd%d0%be-%d0%ba-tcp-%d1%82%d0%be%d0%bd%d0%bd%d0%b5%d0%bb%d1%8e" aria-label="Эффект от BBR применительно к TCP-тоннелю">Эффект от BBR применительно к TCP-тоннелю</a></li>
+                <li>
+                    <a href="#%d0%b2%d0%ba%d0%bb%d1%8e%d1%87%d0%b5%d0%bd%d0%b8%d0%b5" aria-label="Включение">Включение</a></li>
+                <li>
+                    <a href="#last-but-not-least" aria-label="Last, but not least">Last, but not least</a>
+                </li>
+            </ul>
+        </div>
+    </details>
+</div>
+
+  <div class="post-content"><p>Некоторое время назад, в связи со всем известными событиями, я решил защитить свой текущий тоннель до VPS в Нидерландах, для которого до этого использовал обычный <a href="https://www.wireguard.com/">WireGuard</a>. Как это часто со мной бывает, я решил пойти не самым простым, но зато самым любимым мной путём – и написал свой тоннель. :) Идея эта была привлекательна тем, что давала мне возможность познакомиться с <a href="https://tokio.rs/">Tokio</a>, побольше узнать о принципах работы tun/tap–интерфейсов в Linux, почитать исходники <a href="https://shadowsocks.org/">Shadowsocks</a>, ну и в процессе даже удалось найти и поправить <a href="https://github.com/systemd/systemd/pull/30504">небольшую багу в networkd</a>. Но на самом деле речь в данном посте пойдёт не об этом.</p>
+<p>Когда я писал свой тоннель, у меня было стойкое убеждение, что в качестве транспорта нужно прежде всего ориентироваться на UDP, а на TCP откатываться только в том случае, когда UDP перестаёт работать в силу тех или иных &ldquo;причин&rdquo;. И это вроде бы логично: в плане производительности для тоннеля UDP всегда предпочтительнее, т. к. он реализует именно то, что нам нужно – максимально тонкую обёртку над пакетами, а с TCP у нас начинается целый ворох проблем, начиная с <a href="https://openvpn.net/faq/what-is-tcp-meltdown/">TCP Meltdown</a> и заканчивая <a href="https://en.wikipedia.org/wiki/Head-of-line_blocking">head-of-line blocking</a>.</p>
+<p>Но вот когда я начал думать, как можно подтюнить получившийся тоннель помимо включения довольно очевидных вещей вроде <a href="https://man7.org/linux/man-pages/man7/tcp.7.html">TCP_NODELAY</a>, то набрёл на BBR, который стал для меня очень приятным открытием.</p>
+<h2 id="bbr">BBR<a hidden class="anchor" aria-hidden="true" href="#bbr">¶</a></h2>
+<p><a href="https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=0f8782ea14974ce992618b55f0c041ef43ed0b78">BBR (Bottleneck Bandwidth and RTT)</a> – это алгоритм <a href="https://en.wikipedia.org/wiki/TCP_congestion_control">TCP congestion control</a>, разработанный в Google. В отличие от традиционных алгоритмов, которые ориентируются на потери пакетов, BBR пытается судить о загруженности канала, наблюдая за тем, как меняется скорость передачи данных и RTT. Сейчас сети уже не те, что были в 80-ых годах, и такой подход работает гораздо лучше, а особенно – в случае трансконтинентальных соединений, где у нас может быть довольно широкий канал, но при этом небольшой процент потерь пакетов является нормой (как в моём случае с дешёвым VPS).</p>
+<p>В результате получается, что если у вас такой канал, где нередки небольшие потери пакетов, то это сильно сказывается на скорости TCP-соединения, т. к. эти потери расцениваются традиционными алгоритмами как сигнал к тому, что необходимо сбросить скорость до тех пор, пока они не сойдут на нет. К тому же, даже в случае когда потерь нет, но при этом TCP-соединение способно утилизировать весь канал передачи данных, традиционные алгоритмы склонны снижать скорость только тогда, когда буфер роутера (зачастую довольно большой) уже переполнен, и роутер начинает дропать пакеты, что по факту является сильно запоздалой реакцией, которая приводит к увеличению latency, а BBR как раз пытается этой ситуации избежать. Этой проблеме даже посвящен целый сайт <a href="https://www.bufferbloat.net/projects/">bufferbloat.net</a>.</p>
+<p>Польза, которую BBR способен вам нанести по сравнению со стандартным CUBIC&rsquo;ом, сильно зависит от многих факторов, но вот, к примеру, отчёты Amazon и Google, которые свидетельствуют о том, что после включения BBR у них стабильно улучшились bandwidth и RTT: <a href="https://aws.amazon.com/blogs/networking-and-content-delivery/tcp-bbr-congestion-control-with-amazon-cloudfront/">Amazon</a>, <a href="https://cloud.google.com/blog/products/networking/tcp-bbr-congestion-control-comes-to-gcp-your-internet-just-got-faster">Google</a>. В определённых случаях можно ожидать и кратного увеличения скорости TCP-соединения.</p>
+<p>Т. к. BBR является алгоритмом TCP congestion control, то включается он на отправляющей стороне. Т. е., включив его на своём ноутбуке, вы улучшите upload данных, а чтобы улучшить download, он должен быть включён на сервере. При этом, само собой, включение его на одной стороне не требует какой-либо поддержки на другой, т. к. меняются только эвристики внутри TCP-протокола, а не сам протокол.</p>
+<h2 id="критика">Критика<a hidden class="anchor" aria-hidden="true" href="#критика">¶</a></h2>
+<p>Не обошлось правда и без <a href="https://huitema.wordpress.com/2019/01/12/will-transport-innovation-collapse-the-internet/">критики</a> данного алгоритма. Всё дело в том, что по сравнению со стандартным CUBIC&rsquo;ом, BBR ведёт себя достаточно агрессивно, и может получиться так, что если вы, скажем, включите его на своем Linux-ноутбуке и начнёте заливать большие файлы в сеть, то ваш BBR-ноутбук может запросто &ldquo;задушить&rdquo; TCP-соединения соседних устройств, использующих традиционные алгоритмы TCP congestion control (а в MacOS, к примеру, BBR и вовсе недоступен).</p>
+<p>Есть инициатива в виде <a href="https://datatracker.ietf.org/meeting/112/materials/slides-112-iccrg-bbrv2-update-00">BBRv2</a>, которая пытается решить эту проблему, но пока что в ядре используется первая версия, и надо эту особенность иметь в виду.</p>
+<h2 id="эффект-от-bbr-применительно-к-tcp-тоннелю">Эффект от BBR применительно к TCP-тоннелю<a hidden class="anchor" aria-hidden="true" href="#эффект-от-bbr-применительно-к-tcp-тоннелю">¶</a></h2>
+<p>Так вот, почитав всё это, я с одной стороны обрадовался (какая многообещающая штука – надо пробовать!), а с другой – тут же взгрустнул: включать BBR нужно на конечных устройствах (сервер + клиент), а на роутере его включать бесполезно, т. к. при forwarding&rsquo;е пакетов все эти алгоритмы по понятным причинам не задействованы. Но на серверную часть я повлиять не могу, а в качестве клиентской у меня ноутбук с MacOS, в котором BBR и вовсе нет. С другой стороны – подумал я – у меня ведь по факту два TCP-соединения: одно между ноутбуком и конечным сервером, а другое – между двумя точками тоннеля, которые находятся на Linux-серверах, и вот на это соединение я повлиять могу.</p>
+<p>Чтож, попробуем&hellip; Включил его для TCP-соединения своего тоннеля – и тут же получил 2.5x скорость при скачивании файлов! Если раньше что с UDP, что с TCP-транспортом у меня абсолютным максимумом было 30 Mbit/s, то после включения BBR оно тут же скакнуло до 75 Mbit/s.</p>
+<p>Лично я такие результаты объясняю себе следующим: гоняя тоннельный траффик по TCP, я маскирую все потери пакетов между двумя точками тоннеля для TCP-соединений, которые в него заворачиваются. И даже если они используют традиционные алгоритмы, основанные на потерях пакетов, то теперь они этих потерь не замечают и не сбрасывают скорость почём зря. Ну а дальше уже эти данные передаются по TCP-соединению тоннеля с BBR, который максимизирует скорость передачи данных.</p>
+<p>В итоге я пришёл к следующему: если раньше я всегда в качестве транспорта использовал UDP, и переключение на TCP вызывало заметные глазу подтормаживания при загрузке страниц в браузере, то теперь, когда у меня TCP работает с BBR, картина поменялась на противоположную: UDP выдаёт вполне приемлемый результат, но если переключиться на TCP, то невооружённым глазом становится видно, что всё начинает подгружаться ещё быстрее. Учитывая то, что TCP-тоннель ещё и можно замаскировать под обычное HTTPS-соединение, получается, что в использовании UDP и вовсе нет смысла. Единственное, в чём UDP по прежнему обходит TCP + BBR – это в latency: если запустить ping и начать грузить канал, то в случае с UDP latency ping&rsquo;ов практически не меняется, в то время как с TCP (с BBR и без) оно может увеличиваться до четырёх раз. Но т. к. это довольно синтетический тест, а при реальном использовании с браузером, как я описал выше, я вижу противоположные результаты, то для меня это не выглядит проблемой.</p>
+<h2 id="включение">Включение<a hidden class="anchor" aria-hidden="true" href="#включение">¶</a></h2>
+<p>Включается BBR очень просто:</p>
+<p><code>sysctl net.ipv4.tcp_available_congestion_control</code> показывает список доступных алгоритмов. Скорее всего, по умолчанию BBR там не будет:</p>
+<pre tabindex="0"><code>$ sudo sysctl net.ipv4.tcp_available_congestion_control
+net.ipv4.tcp_available_congestion_control = reno cubic
+</code></pre><p>– это потому, что не загружен соответствующий модуль ядра.</p>
+<ol>
+<li>Загружаем модуль – <code>modprobe tcp_bbr</code> (или <code>echo tcp_bbr &gt; /etc/modules-load.d/bbr.conf</code>, чтобы он загружался автоматом при старте системы).</li>
+<li>Включаем BBR – <code>sysctl net.ipv4.tcp_congestion_control=bbr</code> (или <code>echo 'net.ipv4.tcp_congestion_control = bbr' &gt; /etc/sysctl.d/bbr.conf</code>, чтобы он включался автоматом при старте системы). На всякий случай замечу, что, несмотря на префикс <code>net.ipv4.*</code>, включение происходит как для IPv4, так и для IPv6.</li>
+</ol>
+<p>При этом его можно включить не для всех, а только для отдельных TCP-соединений, передав опцию <a href="https://man7.org/linux/man-pages/man7/tcp.7.html">TCP_CONGESTION</a> в <a href="https://man7.org/linux/man-pages/man2/setsockopt.2.html">setsockopt(2)</a>. И даже у <code>iperf</code> есть опция <code>-C bbr</code>, с помощью которой можно протестировать поведение различных алгоритмов TCP congestion control конкретно для вашего случая.</p>
+<h2 id="last-but-not-least">Last, but not least<a hidden class="anchor" aria-hidden="true" href="#last-but-not-least">¶</a></h2>
+<p>В процессе изучения всего вышеописанного я абсолютно случайно для себя узнал, что в то время как во всех современных дистрибутивах благодаря systemd уже давно в качестве <a href="https://www.linuxjournal.com/content/queueing-linux-network-stack">queueing discipline</a> по умолчанию включена <code>fq_codel</code>, которая считается наиболее оптимальным general purpose вариантом, то в Debian/Ubuntu меинтейнеры не смогли преодолеть свою внутреннюю бюрократию – и даже в самых современных Debian/Ubuntu по умолчанию используется <code>pfifo_fast</code>: они не включают в systemd-пакет его <a href="https://github.com/systemd/systemd/blob/main/sysctl.d/50-default.conf">стандартный конфиг</a>, но в то же время не смогли найти &ldquo;правильное место&rdquo;, куда можно было бы положить аналогичные разумные default&rsquo;ы – и в результате используется значение по умолчанию, которое установлено в ядре.</p>
+<p><code>pfifo_fast</code> – это самая простая queueing discipline, которая никак не приоритезирует пакеты между различными сетевыми соединениями, и может получиться так, что самое активное из них будет сильно увеличивать latency всех остальных.</p>
+<p>Поэтому рекомендую всем пользователям Debian/Ubuntu добавить <code>/etc/sysctl.d/00-qdisc.conf</code> со следующим содержимым:</p>
+<pre tabindex="0"><code>net.core.default_qdisc = fq_codel
+</code></pre><p>чтобы исправить это недоразумение.</p>
+
+
+  </div>
+
+  <footer class="post-footer">
+  </footer>
+    <div class="comments-separator"></div><script src="https://giscus.app/client.js"
+        data-repo="KonishchevDmitry/blog"
+        data-repo-id="R_kgDOLqoJ-g"
+        data-category="Announcements"
+        data-category-id="DIC_kwDOLqoJ-s4Cefph"
+        data-mapping="pathname"
+        data-strict="1"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="light"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+</article>
+    </main>
+    
+<footer class="footer"><div class="social-icons">
+    <a href="mailto:konishchev@gmail.com" target="_blank" title="Email" style="box-shadow: none">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 21" fill="none" stroke="currentColor" stroke-width="2"
+    stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+    <polyline points="22,6 12,13 2,6"></polyline>
+</svg>
+
+    </a>
+    <a href="https://github.com/KonishchevDmitry" target="_blank" title="GitHub" style="box-shadow: none">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+    stroke-linecap="round" stroke-linejoin="round">
+    <path
+        d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22">
+    </path>
+</svg>
+
+    </a>
+    <a href="https://www.linkedin.com/in/konishchev/" target="_blank" title="LinkedIn" style="box-shadow: none">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+    stroke-linecap="round" stroke-linejoin="round">
+    <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path>
+    <rect x="2" y="9" width="4" height="12"></rect>
+    <circle cx="4" cy="4" r="2"></circle>
+</svg>
+
+    </a>
+    <a href="/rss.xml" target="_blank" title="RSS" style="box-shadow: none">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+    stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 11a9 9 0 0 1 9 9" />
+    <path d="M4 4a16 16 0 0 1 16 16" />
+    <circle cx="5" cy="19" r="1" />
+</svg>
+
+    </a>
+</div>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+    <path d="M12 6H0l6-6z" />
+  </svg>
+</a>
+
+
+
+<script>
+  (function () {
+    let menu = document.getElementById('menu')
+    if (menu) {
+      menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+      menu.onscroll = function () {
+        localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+      }
+    }
+
+    const disableSmoothScroll = '' == '1';
+    const enableInstantClick = '' == '1';
+    
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || disableSmoothScroll || enableInstantClick) {
+      return;
+    }
+    
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener("click", function (e) {
+        e.preventDefault();
+        var id = this.getAttribute("href").substr(1);
+        document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+          behavior: "smooth"
+        });
+        if (id === "top") {
+          history.replaceState(null, null, " ");
+        } else {
+          history.pushState(null, null, `#${id}`);
+        }
+      });
+    });
+  })();
+</script>
+<script>
+  var mybutton = document.getElementById("top-link");
+  window.onscroll = function () {
+    if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+      mybutton.style.visibility = "visible";
+      mybutton.style.opacity = "1";
+    } else {
+      mybutton.style.visibility = "hidden";
+      mybutton.style.opacity = "0";
+    }
+  };
+</script>
+<script>
+  if (window.scrollListeners) {
+    
+    for (const listener of scrollListeners) {
+      window.removeEventListener('scroll', listener)
+    }
+  }
+  window.scrollListeners = []
+</script>
+
+
+
+<script src="/js/medium-zoom.min.js" data-no-instant
+></script>
+<script>
+  document.querySelectorAll('pre > code').forEach((codeblock) => {
+    const container = codeblock.parentNode.parentNode;
+
+    const copybutton = document.createElement('button');
+    copybutton.classList.add('copy-code');
+    copybutton.innerText = 'копировать';
+
+    function copyingDone() {
+      copybutton.innerText = 'скопировано!';
+      setTimeout(() => {
+        copybutton.innerText = 'копировать';
+      }, 2000);
+    }
+
+    copybutton.addEventListener('click', (cb) => {
+      if ('clipboard' in navigator) {
+        navigator.clipboard.writeText(codeblock.textContent);
+        copyingDone();
+        return;
+      }
+
+      const range = document.createRange();
+      range.selectNodeContents(codeblock);
+      const selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+      try {
+        document.execCommand('copy');
+        copyingDone();
+      } catch (e) { };
+      selection.removeRange(range);
+    });
+
+    if (container.classList.contains("highlight")) {
+      container.appendChild(copybutton);
+    } else if (container.parentNode.firstChild == container) {
+      
+    } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+      
+      codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+    } else {
+      
+      codeblock.parentNode.appendChild(copybutton);
+    }
+  });
+</script>
+
+
+
+
+<script>
+  
+  
+  (function() {
+    const enableTocScroll = '1' == '1'
+    if (!enableTocScroll) {
+      return
+    }
+    if (!document.querySelector('.toc')) {
+      console.log('no toc found, ignore toc scroll')
+      return
+    }
+    
+
+    
+    const scrollListeners = window.scrollListeners
+    const headings = document.querySelectorAll('h1[id],h2[id],h3[id],h4[id],h5[id]');
+    const activeClass = 'active';
+
+    
+    let activeHeading = headings[0];
+    getLinkByHeading(activeHeading).classList.add(activeClass);
+
+    const onScroll = () => {
+      const passedHeadings = [];
+      for (const h of headings) {
+        
+        if (getOffsetTop(h) < 5) {
+          passedHeadings.push(h)
+        } else {
+          break;
+        }
+      }
+      if (passedHeadings.length > 0) {
+        newActiveHeading = passedHeadings[passedHeadings.length - 1];
+      } else {
+        newActiveHeading = headings[0];
+      }
+      if (activeHeading != newActiveHeading) {
+        getLinkByHeading(activeHeading).classList.remove(activeClass);
+        activeHeading = newActiveHeading;
+        getLinkByHeading(activeHeading).classList.add(activeClass);
+      }
+    }
+
+    let timer = null;
+    const scrollListener = () => {
+      if (timer !== null) {
+        clearTimeout(timer)
+      }
+      timer = setTimeout(onScroll, 50)
+    }
+    window.addEventListener('scroll', scrollListener, false);
+    scrollListeners.push(scrollListener)
+
+    function getLinkByHeading(heading) {
+      const id = encodeURI(heading.getAttribute('id')).toLowerCase();
+      return document.querySelector(`.toc ul li a[href="#${id}"]`);
+    }
+
+    function getOffsetTop(heading) {
+      if (!heading.getClientRects().length) {
+        return 0;
+      }
+      let rect = heading.getBoundingClientRect();
+      return rect.top
+    }
+  })();
+  </script>
+
+</body>
+
+</html>
