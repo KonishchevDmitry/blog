@@ -6,8 +6,64 @@
     <description>Recent content in Posts on Dmitry Konishchev&#39;s small blog</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>ru</language>
-    <lastBuildDate>Sat, 18 May 2024 19:36:15 +0300</lastBuildDate>
+    <lastBuildDate>Sun, 04 Aug 2024 14:52:37 +0300</lastBuildDate>
     <atom:link href="https://konishchev.ru/posts/rss.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Автоматическая установка приложений из GitHub-релизов</title>
+      <link>https://konishchev.ru/posts/binup/</link>
+      <pubDate>Sun, 04 Aug 2024 14:51:41 +0300</pubDate>
+      
+      <guid>https://konishchev.ru/posts/binup/</guid>
+      <description>По мере распространения Go и Rust появляется всё больше программ, которые состоят из одного бинарника без каких-либо нестандартных зависимостей, и которые мы устанавливаем руками, скачивая релиз с GitHub: либо потому, что данного приложения ещё нет в вашем дистрибутиве, либо потому, что просто хочется всегда иметь актуальную версию, а не ждать, когда её затянут в дистрибутив.
+Ставить (а особенно обновлять) такие приложения руками – занятие неблагодарное, особенно когда их количество становится больше одного-двух – и хочется какой-то автоматизации.</description>
+      <content:encoded><![CDATA[<p>По мере распространения Go и Rust появляется всё больше программ, которые состоят из одного бинарника без каких-либо нестандартных зависимостей, и которые мы устанавливаем руками, скачивая релиз с GitHub: либо потому, что данного приложения ещё нет в вашем дистрибутиве, либо потому, что просто хочется всегда иметь актуальную версию, а не ждать, когда её затянут в дистрибутив.</p>
+<p>Ставить (а особенно обновлять) такие приложения руками – занятие неблагодарное, особенно когда их количество становится больше одного-двух – и хочется какой-то автоматизации. У меня таких программ около десятка, и довольно долгое время я пользовался различными наколеночными скриптами вроде <a href="https://github.com/KonishchevDmitry/dotfiles/blob/61c8e48e5eb41db1df4e55ab1e97f6c74552b6bc/bin/get-github-release">этого</a> для поддержания их актуальности. Но bash-скрипт – это всё-таки как-то несерьёзно, и поэтому всегда хотелось чего-то более управляемого в виде нормального приложения. Найти что-то готовое, что удовлетворяло бы всем моим потребностям, мне сходу не удалось – поэтому некоторое время назад решил пойти моим излюбленным путём и написать своё приложение под эту конкретную задачу.</p>
+<h2 id="binup">binup</h2>
+<p>Пара недель кодинга по вечерам – и родилась утилита <a href="https://github.com/KonishchevDmitry/binup">binup</a>. Сегодня я зарелизил версию 1.0.0 и полностью перешёл на неё со своих скриптов. Буду рад, если получившаяся тула будет полезна кому-то кроме меня.</p>
+<p>Вот как она работает: вы создаёте конфигурационный файл <code>~/.config/binup/config.yaml</code> с примерно следующим содержимым, в котором описываете конкретное приложение (как его найти на GitHub):</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span>tools:
+</span></span><span style="display:flex;"><span>  binup:
+</span></span><span style="display:flex;"><span>    project: KonishchevDmitry/binup
+</span></span><span style="display:flex;"><span>    release_matcher: binup-linux-x64-*
+</span></span></code></pre></div><p>&hellip; запускаете <code>binup install</code> или <code>binup upgrade</code> – и тула устанавливает, либо обновляет указанные вами приложения.</p>
+<p>Работает <code>binup</code> довольно просто: она нигде не хранит никакую информацию об установленных приложениях, а вместо этого при запуске смотрит на их текущий статус: если нужного бинарника нет, то устанавливает его; если же есть, то пробует запустить приложение с <code>--version</code>, чтобы определить текущую версию приложения и сравнить её с последним релизом на GitHub. Если же версию определить не удалось (к примеру, программа вовсе может не поддерживать флаг <code>--version</code>), то <code>binup</code> ориентируется на время модификации файла, которое при установке приложения задаёт равным времени модификации релиза.</p>
+<h2 id="конфигурация">Конфигурация</h2>
+<p>Вот пример конфигурационного файла со всеми доступными на данный момент опциями:</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#008000"># Path where to install the binaries (the default is ~/.local/bin)</span>
+</span></span><span style="display:flex;"><span>path: /usr/local/bin
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>tools:
+</span></span><span style="display:flex;"><span>  <span style="color:#008000"># Binary name</span>
+</span></span><span style="display:flex;"><span>  prometheus:
+</span></span><span style="display:flex;"><span>    <span style="color:#008000"># GitHub project name</span>
+</span></span><span style="display:flex;"><span>    project: prometheus/prometheus
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#008000"># Changelog URL (will be printed on app upgrade)</span>
+</span></span><span style="display:flex;"><span>    changelog: https://github.com/prometheus/prometheus/blob/main/CHANGELOG.md
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#008000"># Release archive pattern:</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#008000"># * By default shell-like glob matching is used (https://docs.rs/globset/latest/globset/#syntax)</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#008000"># * Pattern started with &#39;~&#39; is treated as regular expression (https://docs.rs/regex/latest/regex/#syntax)</span>
+</span></span><span style="display:flex;"><span>    release_matcher: prometheus-*.linux-amd64.tar.gz
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#008000"># Binary path to look for inside the release archive. If it&#39;s not specified, the tool name will be used.</span>
+</span></span><span style="display:flex;"><span>    binary_matcher: <span style="color:#a31515">&#34;*/prometheus&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#008000"># Post-install script</span>
+</span></span><span style="display:flex;"><span>    post: systemctl restart prometheus
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#008000"># If you have a lot of tools, you&#39;ll likely hit GitHub API rate limits for anonymous requests at some moment.</span>
+</span></span><span style="display:flex;"><span><span style="color:#008000"># So it&#39;s recommended to obtain GitHub token (https://github.com/settings/tokens) and specify it here.</span>
+</span></span><span style="display:flex;"><span><span style="color:#008000"># No permissions are required for the token – it&#39;s needed just to make API requests non-anonymous.</span>
+</span></span><span style="display:flex;"><span>github:
+</span></span><span style="display:flex;"><span>  token: $token
+</span></span></code></pre></div><h2 id="последующее-развитие">Последующее развитие</h2>
+<p>Развивать её в какой-то полноценный пакетный менеджер вроде <a href="https://brew.sh/">Homebrew</a> я точно не планирую, но вот в рамках решения вышеописанной задачи – вполне.</p>
+<p>Пока что из наиболее явных потенциальных фичей видится поддержка GitLab, если возникнет такая необходимость (лично у меня пока что нет ни одного приложения с него), а также явно напрашивается генерация какого-то дефолтного <code>release_matcher</code>&lsquo;а в зависимости от текущей ОС и архитектуры.</p>
+<p>Прямо сейчас она закрывает все мои потребности, но вполне вероятно, что в процессе использования будут возникать новые – и тогда буду закрывать и их.</p>
+]]></content:encoded>
+    </item>
+    
     <item>
       <title>Настраиваем сервер исходящей почты для отправки уведомлений</title>
       <link>https://konishchev.ru/posts/send-only-mail-server/</link>
