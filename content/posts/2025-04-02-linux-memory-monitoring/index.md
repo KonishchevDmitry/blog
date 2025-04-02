@@ -1,7 +1,7 @@
 ---
 title: Мониторим потребление памяти в Linux-системе
 slug: linux-memory-monitoring
-date: 2025-04-01T22:01:25+03:00
+date: 2025-04-02T19:22:25+03:00
 draft: true
 ---
 
