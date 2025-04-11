@@ -10,7 +10,7 @@ defaultContentLanguage: ru
 # We don't use tags and categories, so don't generate them
 disableKinds: ["taxonomy"]
 
-theme: papermod
+theme: papermodx
 markup:
   highlight:
     style: vs
