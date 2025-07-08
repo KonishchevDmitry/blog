@@ -6,7 +6,7 @@
     <description>Recent content in Posts on Dmitry Konishchev&#39;s small blog</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>ru</language>
-    <lastBuildDate>Mon, 07 Apr 2025 09:00:21 +0300</lastBuildDate>
+    <lastBuildDate>Tue, 08 Jul 2025 11:01:22 +0300</lastBuildDate>
     <atom:link href="https://konishchev.ru/posts/rss.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Мониторим потребление памяти в Linux-системе</title>
@@ -42,7 +42,7 @@
 </ul>
 <p>Другими словами:</p>
 <ul>
-<li><code>Cached</code> увеличивается в результате следущих команд: <code>cat /dev/urandom &gt; out</code>, <code>cat big_file &gt; /dev/null</code>;</li>
+<li><code>Cached</code> увеличивается в результате следующих команд: <code>cat /dev/urandom &gt; out</code>, <code>cat big_file &gt; /dev/null</code>;</li>
 <li><code>Buffers</code> увеличивается в случае <code>ls -laR / &gt; /dev/null</code> и <code>dd if=/dev/sda of=/dev/null bs=10M status=progress</code>.</li>
 </ul>
 <h3 id="анонимная-память">Анонимная память</h3>
@@ -78,12 +78,12 @@
 <li>У каждой страницы есть <code>accessed</code>-бит (на уровне page table).</li>
 <li>Если ядро обрабатывает доступ к странице по какой-либо причине, то проставляет этот флаг.</li>
 <li>Если процесс обращается к странице, минуя ядро, то тогда этот флаг проставляет <a href="https://en.wikipedia.org/wiki/Memory_management_unit">MMU</a>.</li>
-<li>Ядро периодически сканирует страницы и если видит выставленный <code>accessed</code>-бит, то зануляет его + promoute&rsquo;ит данную страницу из inactive в active.</li>
+<li>Ядро периодически сканирует страницы и если видит выставленный <code>accessed</code>-бит, то зануляет его + promote&rsquo;ит данную страницу из inactive в active.</li>
 </ol>
 <p>Более подробно про этот механизм можно почитать в <a href="https://www.kernel.org/doc/html/v4.18/admin-guide/mm/idle_page_tracking.html#implementation-details">документации к ядру</a>.</p>
 <p>При этом важно отметить, что не стоит воспринимать inactive-страницы как &ldquo;страницы, к которым не было доступа в течение N секунд&rdquo; – это работает не так. Цель деления на active/inactive не в том, чтобы иметь хронометрическую статистику по активности страниц, а в том, чтобы приоритизировать все имеющиеся страницы для reclaim&rsquo;а. Поэтому данное деление на самом деле очень условное и больше отражает относительную востребованность страниц между собой, нежели фактическую. Общее представление о механизме балансирования страниц между этими двумя списками можно получить <a href="https://biriukov.dev/docs/page-cache/4-page-cache-eviction-and-page-reclaim/#theory">тут</a>.</p>
 <h3 id="slab-kmalloc-vmalloc">slab, kmalloc, vmalloc</h3>
-<p>Для того, чтобы выполнять свою работу, ядру необходимо где-то аллоцировать память под различные структуры, в которых оно хранит текущее состояние системы. Для этих целей в ядре есть <a href="https://hammertux.github.io/slab-allocator">slab-аллокатор</a>, суть которого заключается в следующем: под каждый объект (пример – структура, описывающая процесс, <code>task_struct</code>) заводится свой пул, к которому можно обратиться и попросить аллоцировать память под новый объект. При этом когда мы возвращаем объект в пул, память не освобождается сразу (из расчёта, что через мгновение может прийти запрос на новую аллокацию), и таким образом в slab-аллокаторе, как правило, находится некоторое количество памяти, которую можно в любой момент быстро освободить, если она понадобится в другом месте.</p>
+<p>Чтобы выполнять свою работу, ядру необходимо где-то аллоцировать память под различные структуры, в которых оно хранит текущее состояние системы. Для этих целей в ядре есть <a href="https://hammertux.github.io/slab-allocator">slab-аллокатор</a>, суть которого заключается в следующем: под наиболее часто используемые структуры (пример – структура, описывающая процесс, <code>task_struct</code>) заводится свой пул, к которому можно обратиться и попросить аллоцировать память под новый объект. При этом когда мы возвращаем объект в пул, память не освобождается сразу (из расчёта, что через мгновение может прийти запрос на новую аллокацию), и таким образом в slab-аллокаторе, как правило, находится некоторое количество памяти, которую можно в любой момент быстро освободить, если она понадобится в другом месте.</p>
 <p>Помимо этого, сам тип объекта в slab&rsquo;е может быть помечен как reclaimable – т. е. что он по сути является кэшем, и такие объекты можно при необходимости удалить. Пожалуй самый типичный пример таких объектов – это dentry/inode-кэши, которые, в отличие от page cache&rsquo;а, кэшируют уже не данные, а метаданные файлов и содержимое директорий. Благодаря им, когда вы делаете что-то вроде <code>open(&quot;/a/b/c/d/e&quot;, ...)</code>, системе не нужно каждый раз проходиться по всем директориям в поисках конечного файла (при этом кэшируются также и негативные результаты поиска).</p>
 <p>Как правило, slab-аллокатор используется для структур, которые создаются часто и в большом количестве, но если нужно просто аллоцировать что-то по месту, то используется <code>kmalloc()</code> (по смыслу напоминающий <a href="https://man7.org/linux/man-pages/man3/malloc.3.html">malloc(3)</a>), который на самом деле является надстройкой над slab-аллокатором. А для выделения больших блоков памяти (но без гарантий физической последовательности страниц) используется <code>vmalloc()</code>, который уже никак не связан со slab&rsquo;ом и аллоцирует память напрямую из <a href="https://grimoire.carcano.ch/blog/memory-management-the-buddy-allocator/">buddy-аллокатора</a>.</p>
 <p>Более подробно про типы аллокаторов можно почитать в <a href="https://www.kernel.org/doc/html/v5.0/core-api/memory-allocation.html">документации к ядру</a>. Посмотреть разбивку по текущему использованию slab&rsquo;а можно командой <code>slabtop -sc</code>.</p>
@@ -126,7 +126,7 @@
 <li><code>zswap = Zswap</code> – память, которую потребляет подсистема zswap</li>
 <li><code>Page tables = PageTables + SecPageTables</code></li>
 <li><code>Kernel stacks = KernelStack</code></li>
-<li><code>vmalloc = VmallocUsed</code></li>
+<li><code>vmalloc = VmallocUsed - KernelStack</code> (в современных ядрах kernel stack <a href="https://docs.kernel.org/mm/vmalloced-kernel-stacks.html">выделяется через vmalloc</a>)</li>
 <li><code>percpu = Percpu</code></li>
 <li><code>shmem = Shmem</code></li>
 </ul>
@@ -139,6 +139,11 @@
 <li><code>Misc = KReclaimable - SReclaimable</code></li>
 </ul>
 <p>Запускаем <code>sync &amp;&amp; echo 3 &gt; /proc/sys/vm/drop_caches</code> (см. <a href="https://github.com/torvalds/linux/blob/609706855d90bcab6080ba2cd030b9af322a1f0c/Documentation/admin-guide/sysctl/vm.rst#drop_caches">документацию</a>) – и наблюдаем, как много из этих кэшей система может освободить на самом деле (спойлер: далеко не всё).</p>
+<p>При этом стоит отметить, что может быть и обратная ситуация – когда reclaimable памяти на самом деле больше, чем видно на первый взгляд. Очень показательным примером такого случая являются <a href="https://blogs.oracle.com/linux/post/zombie-memcg-issues">zombie memory cgroups</a>.</p>
+<h3 id="unknown">Unknown</h3>
+<p>Как бы нам ни хотелось детализировать абсолютно всю память, на 100% это сделать невозможно – просто потому, что некоторые аллокации делаются напрямую из buddy-аллокатора и не крутят никакие счётчики. Поэтому какая-то часть выделенной памяти (как правило, небольшая) будет вне наших подсчётов, и важно тут не забыть про неё:</p>
+<p><code>Unknown = MemTotal - MemFree - (AnonPages + SwapCached + Zswap + SUnreclaim + VmallocUsed + PageTables + SecPageTables + Percpu) - (Cached + Buffers + KReclaimable)</code></p>
+<p>Тут, кстати, будет не лишним уточнить, что же такое на самом деле <code>MemTotal</code>. При запуске ядро обнаруживает всю память, доступную в системе, и под каждую физическую страницу создаёт структуру <a href="https://github.com/torvalds/linux/blob/d7b8f8e20813f0179d8ef519541a3527e7661d3a/include/linux/mm_types.h#L73">struct page</a>, которыми затем оперирует buddy-аллокатор. <code>MemTotal</code> при этом отражает общий размер памяти, доступный для аллокации, т. е., грубо говоря, количество <code>struct page</code> умноженное на размер страницы (и не включает в себя память, занятую самим buddy-аллокатором, а также зарезервированную под аппаратное обеспечение и память, в которой находится код ядра). Именно поэтому он всегда меньше размера физической памяти.</p>
 <h3 id="available-memory">Available memory</h3>
 <p>Здесь у нас будет всего одна метрика – <code>MemAvailable</code>. Она представляет из себя оценочное количество памяти, которое доступно приложениям для аллокации без ухода в swap.</p>
 <p>Вычисляется она <a href="https://github.com/torvalds/linux/blob/e8c1a296b8066734ef20797ab77e03a90b0c9be8/mm/show_mem.c#L32">следующим образом</a>: берутся все свободные страницы, к ним добавляется весь page cache и reclaimable-память ядра + делаются поправки на watermark&rsquo;и memory pressure и тот факт, что абсолютно всю память по-reclaim&rsquo;ить всё равно не получится, т. к. по факту какая-то её часть всё равно нужна для нормальной работы системы.</p>
@@ -160,7 +165,7 @@
 <h3 id="swap-usage">Swap usage</h3>
 <ul>
 <li><code>Cashed = SwapCached</code> – закэшированные в памяти страницы swap&rsquo;а</li>
-<li><code>zswaped = Zswapped</code> – объём памяти, выгруженный в zswap</li>
+<li><code>zswapped = Zswapped</code> – объём памяти, выгруженный в zswap</li>
 <li><code>Swapped out = SwapTotal - SwapFree - SwapCached - Zswapped</code> – выгруженная (и не закэшированная) на диск память</li>
 </ul>
 <h3 id="zswap">zswap</h3>
