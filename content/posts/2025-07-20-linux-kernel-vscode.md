@@ -5,11 +5,11 @@ date: 2025-07-20T18:57:09+03:00
 draft: true
 ---
 
-Мне никогда не приходилось заниматься разработкой ядра, но вот в последнее время всё чаще возникает необходимость заглянуть в его исходники, чтобы уточнить для себя, как именно работает тот или иной системный вызов или файл в sysfs/proc. И каждый раз это было страдание: IDE сходу не могло адекватно проиндексировать его код, чтобы можно было более или менее сносно прыгать по функциям. Поэтому решил потратить какое-то время и разобраться, как можно улучшить эту ситуацию.
+Мне никогда не приходилось заниматься разработкой ядра, но вот в последнее время всё чаще возникает необходимость заглянуть в его исходники, чтобы уточнить для себя, как именно работает тот или иной системный вызов или файл в sysfs/proc. И каждый раз это было жутко неудобно: IDE сходу не могло адекватно проиндексировать его код, чтобы можно было более или менее сносно прыгать по функциям. Поэтому решил потратить какое-то время и разобраться, как можно улучшить эту ситуацию.
 
 ## C/C++ extension
 
-Если погуглить, то наиболее частая рекомендация сводится к использованию VS Code с расширениями [Makefile Tools](https://marketplace.visualstudio.com/items?itemName=ms-vscode.makefile-tools) и [C/C++](https://marketplace.visualstudio.com/items?itemName=ms-vscode.cpptools) с примерно следующим `.vscode/c_cpp_properties.json`:
+Если погуглить, то наиболее частая рекомендация сводится к использованию VS Code с расширениями [C/C++](https://marketplace.visualstudio.com/items?itemName=ms-vscode.cpptools) и [Makefile Tools](https://marketplace.visualstudio.com/items?itemName=ms-vscode.makefile-tools) с примерно следующим `.vscode/c_cpp_properties.json`:
 
 ```json
 {
@@ -17,7 +17,6 @@ draft: true
         {
             "name": "Linux",
 
-            "defines": [],
             "includePath": [
                 "${workspaceFolder}/arch/x86/include/generated",
                 "${workspaceFolder}/arch/x86/include",
@@ -29,8 +28,8 @@ draft: true
             ],
 
             "dotConfig": "${workspaceFolder}/.config",
-            "compileCommands": "${workspaceFolder}/compile_commands.json",
             "configurationProvider": "ms-vscode.makefile-tools",
+            "compileCommands": "${workspaceFolder}/compile_commands.json",
 
             "compilerPath": "/usr/bin/gcc",
             "intelliSenseMode": "linux-gcc-x64",
@@ -43,7 +42,7 @@ draft: true
 }
 ```
 
-В итоге оно работает, но очень ограниченно: навигация по коду постоянно тормозит и либо не находит часть символов, либо для части функций находит только их объявление в заголовочном файле, но не реализацию – и в итоге нормально работать в таком режиме просто невозможно.
+В итоге оно работает, но очень ограниченно: навигация по коду постоянно тормозит и либо не находит часть символов, либо для части функций находит только их объявление в заголовочном файле, но не реализацию – и в итоге нормально работать в таком режиме просто невозможно, так как постоянно приходится переключаться на ручной поиск символа через обычный поиск по содержимому файлов.
 
 ## clangd
 
@@ -53,15 +52,15 @@ draft: true
 
 ## Приступаем к работе
 
-Запускаем `git clone git@github.com:torvalds/linux.git`
+Клонируем репозиторий: `git clone git@github.com:torvalds/linux.git`.
+
+Чтобы самому не возиться с конфигурацией ядра, а также работать именно с той, которая будет использоваться в реальной жизни, берем конфигурацию из текущей системы: `cat "/boot/config-$(uname -r)" > .config`.
 
 Устанавливаем пакеты, которые нам понадобятся для сборки:
-* Fedora: `sudo dnf install bc bison clang clangd flex elfutils-libelf-devel ncurses-devel openssl-devel lld llvm make zstd`
+* Fedora: `sudo dnf install bc bison clang clangd elfutils-libelf-devel flex lld llvm make ncurses-devel openssl-devel zstd`
 * Ubuntu: `sudo apt install bc bison clang clangd flex libelf-dev libncurses-dev libssl-dev lld llvm make zstd`
 
-Чтобы самому не возиться с конфигурацией ядра, а также работать именно с той конфигурацией, которая будет использоваться в реальной жизни, берем конфигурацию из текущей системы: `cat "/boot/config-$(uname -r)" > .config`.
-
-В VS Code через Command Palette открываем `Preferences: Open Workspace Settings (JSON)` и задаём общие настройки проекта:
+В `.vscode/settings.json` задаём общие настройки проекта:
 
 ```json
 {
@@ -76,25 +75,25 @@ draft: true
     },
 
     "files.exclude": {
+        "**/modules.order": true,
         "**/.*.*.cmd": true,
         "**/*.a": true,
         "**/*.o": true,
         "**/*.ko": true,
         "**/*.mod": true,
         "**/*.mod.c": true,
-        "**/*.symvers": true,
-        "**/modules.order": true
+        "**/*.symvers": true
     }
 }
 ```
 
 Далее устанавливаем расширение [clangd](https://marketplace.visualstudio.com/items?itemName=llvm-vs-code-extensions.vscode-clangd) – либо через интерфейс VS Code, либо с помощью команды `code --install-extension llvm-vs-code-extensions.vscode-clangd`.
 
-И я очень рекомендую добавить следующий параметр в настройки VS Code, в котором после `-j` поставить количество ядер на вашем процессоре, т. к. по какой-то причине clangd по умолчанию при индексации использует только часть из них, что на таком большом проекте как ядро Linux приводит к невероятно долгой первичной индексации.
+И я очень рекомендую добавить следующий параметр в настройки VS Code, в котором после `-j` поставить количество ядер в вашем процессоре, так как по какой-то причине clangd по умолчанию при индексации использует только часть из них, что на таком большом проекте, как ядро Linux, приводит к невероятно долгой первичной индексации:
 
 ```json
 {
-    "clangd.arguments": ["-j", "10"],
+    "clangd.arguments": ["-j", "10"]
 }
 ```
 
@@ -112,15 +111,15 @@ make -j "$(nproc)" LLVM=1 compile_commands.json
 
 ## Работа с кодом ядра из MacOS
 
-Я в качестве рабочего инструмента использую MacBook Pro M1 и, казалось бы, это не самая удобная конфигурация для того, чтобы копаться в исходниках ядра, но, к счастью, это не так.
+В качестве рабочего инструмента у меня MacBook Pro M1 и, казалось бы, это не самая удобная конфигурация для того, чтобы копаться в исходниках ядра, но, к счастью, это не так.
 
-Устанавливаем [OrbStack](https://orbstack.dev/). И создаём себе виртуальную машину:
+Устанавливаем [OrbStack](https://orbstack.dev/) и создаём себе виртуальную машину:
 
 ```bash
 orbctl create ubuntu kernel
 ```
 
-При этом, несмотря на то, что OrbStack поддерживает эмуляцию x86 через [Rosetta](https://developer.apple.com/documentation/apple-silicon/about-the-rosetta-translation-environment), в этом нет необходимости, т. к. при сборке ядра мы можем использовать кросс-компиляцию.
+При этом, несмотря на то, что OrbStack поддерживает эмуляцию x86 через [Rosetta](https://developer.apple.com/documentation/apple-silicon/about-the-rosetta-translation-environment), в ней нет необходимости, так как при сборке ядра мы можем использовать кросс-компиляцию.
 
 Заходим на нашу виртуальную машину:
 
@@ -135,4 +134,8 @@ orb
 Include ~/.orbstack/ssh/config
 ```
 
-А дальше с помощью расширения [Remote - SSH](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh) подключаемся VS Code'ом к нашей виртуальной машине и выполняем все действия, которые были перечислены в предыдущем разделе, но за одним исключением – при вызове `make` необходимо указать `ARCH=x86`, чтобы наша ARM'овая виртуалка собрала ядро под целевую архитектуру (x86-64).
+А затем с помощью расширения [Remote - SSH](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh) подключаемся VS Code'ом к нашей виртуальной машине и выполняем все действия, которые были перечислены в предыдущем разделе, но за одним исключением – при вызове `make` необходимо указать `ARCH=x86`, чтобы наша ARM'овая виртуалка собрала ядро под целевую архитектуру (x86-64):
+
+```bash
+make -j "$(nproc)" LLVM=1 ARCH=x86 compile_commands.json
+```
