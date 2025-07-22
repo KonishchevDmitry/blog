@@ -6,7 +6,7 @@
     <description>Recent content on Dmitry Konishchev&#39;s small blog</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>ru</language>
-    <lastBuildDate>Tue, 22 Jul 2025 09:32:41 +0300</lastBuildDate>
+    <lastBuildDate>Tue, 22 Jul 2025 19:28:28 +0300</lastBuildDate>
     <atom:link href="https://konishchev.ru/rss.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Настраиваем VS Code для работы с кодом ядра Linux</title>
@@ -53,8 +53,8 @@
 <h2 id="приступаем-к-работе">Приступаем к работе</h2>
 <p>Клонируем репозиторий:</p>
 <div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>git clone git@github.com:torvalds/linux.git
-</span></span></code></pre></div><p>Чтобы самому не возиться с конфигурацией ядра, а также работать именно с той, которая будет использоваться в реальной жизни, берем конфигурацию из текущей системы:</p>
-<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>cat <span style="color:#a31515">&#34;/boot/config-</span><span style="color:#00f">$(</span>uname -r<span style="color:#00f">)</span><span style="color:#a31515">&#34;</span> &gt; .config
+</span></span></code></pre></div><p>Чтобы самому не возиться с конфигурацией ядра, а также работать именно с той, которая будет использоваться в реальной жизни, берём конфигурацию из текущей системы:</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>cp <span style="color:#a31515">&#34;/boot/config-</span><span style="color:#00f">$(</span>uname -r<span style="color:#00f">)</span><span style="color:#a31515">&#34;</span> .config
 </span></span></code></pre></div><p>Устанавливаем пакеты, которые нам понадобятся для сборки:</p>
 <ul>
 <li>Fedora: <code>sudo dnf install bc bison clang clangd elfutils-libelf-devel flex lld llvm make ncurses-devel openssl-devel zstd</code></li>
@@ -84,11 +84,11 @@
 </span></span><span style="display:flex;"><span>    }
 </span></span><span style="display:flex;"><span>}
 </span></span></code></pre></div><p>Далее устанавливаем расширение <a href="https://marketplace.visualstudio.com/items?itemName=llvm-vs-code-extensions.vscode-clangd">clangd</a> – либо через интерфейс VS Code, либо с помощью команды <code>code --install-extension llvm-vs-code-extensions.vscode-clangd</code>.</p>
-<p>И я очень рекомендую добавить следующий параметр в настройки VS Code, в котором после <code>-j</code> поставить количество ядер в вашем процессоре, т. к. по какой-то причине clangd по умолчанию при индексации использует только часть из них, что на таком большом проекте, как ядро Linux, приводит к невероятно долгой первичной индексации:</p>
+<p>И я очень рекомендую добавить следующий параметр в настройки VS Code, в котором после <code>-j</code> указать количество ядер в вашем процессоре, т. к. по какой-то причине clangd по умолчанию при индексации использует только часть из них, что на таком большом проекте, как ядро Linux, приводит к невероятно долгой первичной индексации:</p>
 <div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
 </span></span><span style="display:flex;"><span>    &#34;clangd.arguments&#34;: [<span style="color:#a31515">&#34;-j&#34;</span>, <span style="color:#a31515">&#34;10&#34;</span>]
 </span></span><span style="display:flex;"><span>}
-</span></span></code></pre></div><p>clangd ожидает, что в корне проекта у нас будет файл <a href="https://clang.llvm.org/docs/JSONCompilationDatabase.html">compile_commands.json</a>, в котором будут указаны опции компиляции каждого <code>*.c</code>-файла проекта. Именно благодаря этому файлу он может правильно проиндексировать проект. Поэтому запускаем следующую команду:</p>
+</span></span></code></pre></div><p>clangd ожидает, что в корне проекта у нас будет файл <a href="https://clang.llvm.org/docs/JSONCompilationDatabase.html">compile_commands.json</a>, в котором будут указаны опции компиляции каждого <code>*.c</code>-файла проекта. Именно благодаря этому файлу он может правильно проиндексировать код. Поэтому запускаем следующую команду:</p>
 <div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>make -j <span style="color:#a31515">&#34;</span><span style="color:#00f">$(</span>nproc<span style="color:#00f">)</span><span style="color:#a31515">&#34;</span> LLVM=1 compile_commands.json
 </span></span></code></pre></div><p>&hellip; и идём заниматься своими делами – работать оно будет довольно долго.</p>
 <p>Как только <code>make</code> отработает, и у нас появится <code>compile_commands.json</code>, открываем в VS Code любой <code>*.c</code>-файл, чтобы стриггерить clangd – и он тут же начнёт индексировать наш проект (в status bar будет соответствующая информация о прогрессе индексации). Тут тоже придётся подождать какое-то время, но только в первый раз – при последующем переоткрытии проекта оно будет подхватываться гораздо быстрее.</p>
