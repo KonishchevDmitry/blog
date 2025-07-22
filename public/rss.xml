@@ -6,8 +6,108 @@
     <description>Recent content on Dmitry Konishchev&#39;s small blog</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>ru</language>
-    <lastBuildDate>Mon, 21 Jul 2025 20:42:49 +0300</lastBuildDate>
+    <lastBuildDate>Tue, 22 Jul 2025 09:32:41 +0300</lastBuildDate>
     <atom:link href="https://konishchev.ru/rss.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Настраиваем VS Code для работы с кодом ядра Linux</title>
+      <link>https://konishchev.ru/posts/linux-kernel-vscode/</link>
+      <pubDate>Tue, 22 Jul 2025 09:30:09 +0300</pubDate>
+      
+      <guid>https://konishchev.ru/posts/linux-kernel-vscode/</guid>
+      <description>&lt;p&gt;Мне никогда не приходилось заниматься разработкой ядра, но вот в последнее время всё чаще возникает необходимость заглянуть в его исходники, чтобы уточнить для себя, как именно работает тот или иной системный вызов или файл в sysfs/proc. И каждый раз это было жутко неудобно, т. к. IDE сходу не могло адекватно проиндексировать код ядра, чтобы можно было более или менее сносно прыгать по функциям. Поэтому решил потратить какое-то время и разобраться, как можно улучшить эту ситуацию.&lt;/p&gt;</description>
+      <content:encoded><![CDATA[<p>Мне никогда не приходилось заниматься разработкой ядра, но вот в последнее время всё чаще возникает необходимость заглянуть в его исходники, чтобы уточнить для себя, как именно работает тот или иной системный вызов или файл в sysfs/proc. И каждый раз это было жутко неудобно, т. к. IDE сходу не могло адекватно проиндексировать код ядра, чтобы можно было более или менее сносно прыгать по функциям. Поэтому решил потратить какое-то время и разобраться, как можно улучшить эту ситуацию.</p>
+<h2 id="cc-extension">C/C++ extension</h2>
+<p>Если погуглить, то наиболее частая рекомендация сводится к использованию VS Code с расширениями <a href="https://marketplace.visualstudio.com/items?itemName=ms-vscode.cpptools">C/C++</a> и <a href="https://marketplace.visualstudio.com/items?itemName=ms-vscode.makefile-tools">Makefile Tools</a> с примерно следующим <code>.vscode/c_cpp_properties.json</code>:</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    &#34;configurations&#34;: [
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            &#34;name&#34;: <span style="color:#a31515">&#34;Linux&#34;</span>,
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            &#34;includePath&#34;: [
+</span></span><span style="display:flex;"><span>                <span style="color:#a31515">&#34;${workspaceFolder}/arch/x86/include/generated&#34;</span>,
+</span></span><span style="display:flex;"><span>                <span style="color:#a31515">&#34;${workspaceFolder}/arch/x86/include&#34;</span>,
+</span></span><span style="display:flex;"><span>                <span style="color:#a31515">&#34;${workspaceFolder}/include&#34;</span>,
+</span></span><span style="display:flex;"><span>                <span style="color:#a31515">&#34;${workspaceFolder}/**&#34;</span>
+</span></span><span style="display:flex;"><span>            ],
+</span></span><span style="display:flex;"><span>            &#34;forcedInclude&#34;: [
+</span></span><span style="display:flex;"><span>                <span style="color:#a31515">&#34;${workspaceFolder}/include/generated/autoconf.h&#34;</span>
+</span></span><span style="display:flex;"><span>            ],
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            &#34;dotConfig&#34;: <span style="color:#a31515">&#34;${workspaceFolder}/.config&#34;</span>,
+</span></span><span style="display:flex;"><span>            &#34;configurationProvider&#34;: <span style="color:#a31515">&#34;ms-vscode.makefile-tools&#34;</span>,
+</span></span><span style="display:flex;"><span>            &#34;compileCommands&#34;: <span style="color:#a31515">&#34;${workspaceFolder}/compile_commands.json&#34;</span>,
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            &#34;compilerPath&#34;: <span style="color:#a31515">&#34;/usr/bin/gcc&#34;</span>,
+</span></span><span style="display:flex;"><span>            &#34;intelliSenseMode&#34;: <span style="color:#a31515">&#34;linux-gcc-x64&#34;</span>,
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            &#34;cStandard&#34;: <span style="color:#a31515">&#34;gnu11&#34;</span>,
+</span></span><span style="display:flex;"><span>            &#34;cppStandard&#34;: <span style="color:#a31515">&#34;gnu++11&#34;</span>
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    ],
+</span></span><span style="display:flex;"><span>    &#34;version&#34;: 4
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>В итоге оно работает, но очень ограниченно: навигация по коду постоянно тормозит и либо вовсе не находит часть символов, либо для части функций находит только их объявление в заголовочном файле, но не реализацию – и нормально работать в таком режиме просто невозможно, т. к. постоянно приходится переключаться на обычный поиск по содержимому файлов.</p>
+<h2 id="clangd">clangd</h2>
+<p>Но, как оказалось, у вышеупомянутых расширений от Microsoft есть очень достойная альтернатива в виде расширения <a href="https://marketplace.visualstudio.com/items?itemName=llvm-vs-code-extensions.vscode-clangd">clangd</a>, которое работает поверх полноценного language server&rsquo;а <a href="https://clangd.llvm.org/">clangd</a>. И это очень хорошая альтернатива, особенно учитывая то, что с относительно недавних пор ядро Linux <a href="https://docs.kernel.org/kbuild/llvm.html">поддерживает</a> сборку clang&rsquo;ом.</p>
+<p>И оно действительно <strong>работает</strong>. Да – первоначальное построение индекса занимает какое-то время, но вот зато потом IDE видит все символы и, что не менее важно, осуществляет очень быструю навигацию по ним. Проблемы возникают разве что с заголовочными файлами, для которых в силу понятных причин не может быть однозначной информации, с какими флагами компиляции они будут использоваться.</p>
+<h2 id="приступаем-к-работе">Приступаем к работе</h2>
+<p>Клонируем репозиторий:</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>git clone git@github.com:torvalds/linux.git
+</span></span></code></pre></div><p>Чтобы самому не возиться с конфигурацией ядра, а также работать именно с той, которая будет использоваться в реальной жизни, берем конфигурацию из текущей системы:</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>cat <span style="color:#a31515">&#34;/boot/config-</span><span style="color:#00f">$(</span>uname -r<span style="color:#00f">)</span><span style="color:#a31515">&#34;</span> &gt; .config
+</span></span></code></pre></div><p>Устанавливаем пакеты, которые нам понадобятся для сборки:</p>
+<ul>
+<li>Fedora: <code>sudo dnf install bc bison clang clangd elfutils-libelf-devel flex lld llvm make ncurses-devel openssl-devel zstd</code></li>
+<li>Ubuntu: <code>sudo apt install bc bison clang clangd flex libelf-dev libncurses-dev libssl-dev lld llvm make zstd</code></li>
+</ul>
+<p>В <code>.vscode/settings.json</code> задаём общие настройки проекта:</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    &#34;[c]&#34;: {
+</span></span><span style="display:flex;"><span>        &#34;editor.tabSize&#34;: 8,
+</span></span><span style="display:flex;"><span>        &#34;editor.insertSpaces&#34;: <span style="color:#00f">false</span>,
+</span></span><span style="display:flex;"><span>        &#34;editor.detectIndentation&#34;: <span style="color:#00f">false</span>,
+</span></span><span style="display:flex;"><span>        &#34;editor.rulers&#34;: [80, 100]
+</span></span><span style="display:flex;"><span>    },
+</span></span><span style="display:flex;"><span>    &#34;files.associations&#34;: {
+</span></span><span style="display:flex;"><span>        &#34;*.h&#34;: <span style="color:#a31515">&#34;c&#34;</span>
+</span></span><span style="display:flex;"><span>    },
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    &#34;files.exclude&#34;: {
+</span></span><span style="display:flex;"><span>        &#34;**/modules.order&#34;: <span style="color:#00f">true</span>,
+</span></span><span style="display:flex;"><span>        &#34;**/.*.*.cmd&#34;: <span style="color:#00f">true</span>,
+</span></span><span style="display:flex;"><span>        &#34;**/*.a&#34;: <span style="color:#00f">true</span>,
+</span></span><span style="display:flex;"><span>        &#34;**/*.o&#34;: <span style="color:#00f">true</span>,
+</span></span><span style="display:flex;"><span>        &#34;**/*.ko&#34;: <span style="color:#00f">true</span>,
+</span></span><span style="display:flex;"><span>        &#34;**/*.mod&#34;: <span style="color:#00f">true</span>,
+</span></span><span style="display:flex;"><span>        &#34;**/*.mod.c&#34;: <span style="color:#00f">true</span>,
+</span></span><span style="display:flex;"><span>        &#34;**/*.symvers&#34;: <span style="color:#00f">true</span>
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>Далее устанавливаем расширение <a href="https://marketplace.visualstudio.com/items?itemName=llvm-vs-code-extensions.vscode-clangd">clangd</a> – либо через интерфейс VS Code, либо с помощью команды <code>code --install-extension llvm-vs-code-extensions.vscode-clangd</code>.</p>
+<p>И я очень рекомендую добавить следующий параметр в настройки VS Code, в котором после <code>-j</code> поставить количество ядер в вашем процессоре, т. к. по какой-то причине clangd по умолчанию при индексации использует только часть из них, что на таком большом проекте, как ядро Linux, приводит к невероятно долгой первичной индексации:</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    &#34;clangd.arguments&#34;: [<span style="color:#a31515">&#34;-j&#34;</span>, <span style="color:#a31515">&#34;10&#34;</span>]
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>clangd ожидает, что в корне проекта у нас будет файл <a href="https://clang.llvm.org/docs/JSONCompilationDatabase.html">compile_commands.json</a>, в котором будут указаны опции компиляции каждого <code>*.c</code>-файла проекта. Именно благодаря этому файлу он может правильно проиндексировать проект. Поэтому запускаем следующую команду:</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>make -j <span style="color:#a31515">&#34;</span><span style="color:#00f">$(</span>nproc<span style="color:#00f">)</span><span style="color:#a31515">&#34;</span> LLVM=1 compile_commands.json
+</span></span></code></pre></div><p>&hellip; и идём заниматься своими делами – работать оно будет довольно долго.</p>
+<p>Как только <code>make</code> отработает, и у нас появится <code>compile_commands.json</code>, открываем в VS Code любой <code>*.c</code>-файл, чтобы стриггерить clangd – и он тут же начнёт индексировать наш проект (в status bar будет соответствующая информация о прогрессе индексации). Тут тоже придётся подождать какое-то время, но только в первый раз – при последующем переоткрытии проекта оно будет подхватываться гораздо быстрее.</p>
+<p>Как только индексация закончится, должны заработать все стандартные средства навигации по коду.</p>
+<h2 id="работа-с-кодом-ядра-из-macos">Работа с кодом ядра из MacOS</h2>
+<p>В качестве рабочего инструмента у меня MacBook Pro M1 и, казалось бы, это не самая удобная конфигурация для того, чтобы копаться в исходниках ядра, но, к счастью, это не так.</p>
+<p>Устанавливаем <a href="https://orbstack.dev/">OrbStack</a> и создаём себе виртуальную машину:</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>orbctl create ubuntu kernel
+</span></span></code></pre></div><p>При этом, несмотря на то, что OrbStack поддерживает эмуляцию x86 через <a href="https://developer.apple.com/documentation/apple-silicon/about-the-rosetta-translation-environment">Rosetta</a>, в ней нет необходимости, т. к. при сборке ядра мы можем использовать кросс-компиляцию.</p>
+<p>Заходим на нашу виртуальную машину:</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>orb
+</span></span></code></pre></div><p>и клонируем наш репозиторий.</p>
+<p>Добавляем в самое начало <code>~/.vscode/ssh/config</code> следующую строку:</p>
+<pre tabindex="0"><code>Include ~/.orbstack/ssh/config
+</code></pre><p>А затем с помощью расширения <a href="https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh">Remote - SSH</a> подключаемся VS Code&rsquo;ом к нашей виртуальной машине и выполняем все действия, которые были перечислены в предыдущем разделе, но за одним исключением – при вызове <code>make</code> необходимо указать <code>ARCH=x86</code>, чтобы наша ARM&rsquo;овая виртуалка собрала ядро под целевую архитектуру (x86-64):</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>make -j <span style="color:#a31515">&#34;</span><span style="color:#00f">$(</span>nproc<span style="color:#00f">)</span><span style="color:#a31515">&#34;</span> LLVM=1 ARCH=x86 compile_commands.json
+</span></span></code></pre></div>]]></content:encoded>
+    </item>
+    
     <item>
       <title>Мониторим потребление памяти в Linux-системе</title>
       <link>https://konishchev.ru/posts/linux-memory-monitoring/</link>

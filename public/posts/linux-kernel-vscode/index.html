@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="ru" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>Настраиваем VS Code для работы с кодом ядра Linux | Dmitry Konishchev&#39;s small blog</title>
+<meta name="keywords" content="">
+<meta name="description" content="Мне никогда не приходилось заниматься разработкой ядра, но вот в последнее время всё чаще возникает необходимость заглянуть в его исходники, чтобы уточнить для себя, как именно работает тот или иной системный вызов или файл в sysfs/proc. И каждый раз это было жутко неудобно, т. к. IDE сходу не могло адекватно проиндексировать код ядра, чтобы можно было более или менее сносно прыгать по функциям. Поэтому решил потратить какое-то время и разобраться, как можно улучшить эту ситуацию.">
+<meta name="author" content="">
+<link rel="canonical" href="https://konishchev.ru/posts/linux-kernel-vscode/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.min.27b0fc6a9e4df4110536f685cccf8ca9977c200af0d8eceaa8e77a5d07235262.css" integrity="sha256-J7D8ap5N9BEFNvaFzM&#43;MqZd8IArw2OzqqOd6XQcjUmI=" rel="preload stylesheet" as="style">
+
+<!-- Console icon by Icons8 (https://icons8.com/icon/pSUzrDn0xTlh/console) -->
+
+<link rel="icon" type="image/png" sizes="16x16" href="/images/favicon/16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/images/favicon/32.png">
+<link rel="icon" type="image/png" sizes="72x72" href="/images/favicon/72.png">
+<link rel="icon" type="image/png" sizes="96x96" href="/images/favicon/96.png">
+
+<link rel="apple-touch-icon" type="image/png" sizes="57x57" href="/images/favicon/57.png">
+<link rel="apple-touch-icon" type="image/png" sizes="60x60" href="/images/favicon/60.png">
+<link rel="apple-touch-icon" type="image/png" sizes="72x72" href="/images/favicon/72.png">
+<link rel="apple-touch-icon" type="image/png" sizes="76x76" href="/images/favicon/76.png">
+
+
+<link rel="alternate" hreflang="ru" href="https://konishchev.ru/posts/linux-kernel-vscode/">
+
+<meta name="twitter:title" content="Настраиваем VS Code для работы с кодом ядра Linux | Dmitry Konishchev&#39;s small blog" />
+<meta name="twitter:description" content="Мне никогда не приходилось заниматься разработкой ядра, но вот в последнее время всё чаще возникает необходимость заглянуть в его исходники, чтобы уточнить для себя, как именно работает тот или иной системный вызов или файл в sysfs/proc. И каждый раз это было жутко неудобно, т. к. IDE сходу не могло адекватно проиндексировать код ядра, чтобы можно было более или менее сносно прыгать по функциям. Поэтому решил потратить какое-то время и разобраться, как можно улучшить эту ситуацию." />
+<meta property="og:title" content="Настраиваем VS Code для работы с кодом ядра Linux | Dmitry Konishchev&#39;s small blog" />
+<meta property="og:description" content="Мне никогда не приходилось заниматься разработкой ядра, но вот в последнее время всё чаще возникает необходимость заглянуть в его исходники, чтобы уточнить для себя, как именно работает тот или иной системный вызов или файл в sysfs/proc. И каждый раз это было жутко неудобно, т. к. IDE сходу не могло адекватно проиндексировать код ядра, чтобы можно было более или менее сносно прыгать по функциям. Поэтому решил потратить какое-то время и разобраться, как можно улучшить эту ситуацию." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://konishchev.ru/posts/linux-kernel-vscode/" />
+<meta property="article:section" content="posts" />
+  <meta property="article:published_time" content="2025-07-22T09:30:09&#43;03:00" />
+  <meta property="article:modified_time" content="2025-07-22T09:32:41&#43;03:00" />
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "Posts",
+      "item": "https://konishchev.ru/posts/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "Настраиваем VS Code для работы с кодом ядра Linux",
+      "item": "https://konishchev.ru/posts/linux-kernel-vscode/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "Настраиваем VS Code для работы с кодом ядра Linux | Dmitry Konishchev's small blog",
+  "name": "Настраиваем VS Code для работы с кодом ядра Linux",
+  "description": "Мне никогда не приходилось заниматься разработкой ядра, но вот в последнее время всё чаще возникает необходимость заглянуть в его исходники, чтобы уточнить для себя, как именно работает тот или иной системный вызов или файл в sysfs/proc. И каждый раз это было жутко неудобно, т. к. IDE сходу не могло адекватно проиндексировать код ядра, чтобы можно было более или менее сносно прыгать по функциям. Поэтому решил потратить какое-то время и разобраться, как можно улучшить эту ситуацию.\n",
+  "keywords": [
+    
+  ],
+  "wordCount" : "739",
+  "inLanguage": "ru",
+  "datePublished": "2025-07-22T09:30:09+03:00",
+  "dateModified": "2025-07-22T09:32:41+03:00",
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://konishchev.ru/posts/linux-kernel-vscode/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Dmitry Konishchev's small blog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://konishchev.ru/favicon.ico"
+    }
+  }
+}
+</script>
+<script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();
+    for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+    k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(96897335, "init", {
+        clickmap:true,
+        trackLinks:true,
+        accurateTrackBounce:true
+    });
+</script>
+<noscript><div><img src="https://mc.yandex.ru/watch/96897335" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+</noscript>
+
+</head>
+
+<body class=" type-posts kind-page layout-" id="top">
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://konishchev.ru/" accesskey="h" title="Dmitry Konishchev&#39;s small blog (Alt + H)">Dmitry Konishchev&#39;s small blog</a>
+            <span class="logo-switches">
+            </span>
+        </div>
+        <ul id="menu">
+        </ul>
+    </nav>
+</header>
+<main class="main post">
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">Настраиваем VS Code для работы с кодом ядра Linux</h1>
+    <div class="post-meta"><span class="meta-item">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-calendar" style="user-select: text;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" style="user-select: text;"></rect><line x1="16" y1="2" x2="16" y2="6" style="user-select: text;"></line><line x1="8" y1="2" x2="8" y2="6" style="user-select: text;"></line><line x1="3" y1="10" x2="21" y2="10" style="user-select: text;"></line></svg>
+  <span>22 июля 2025</span></span>
+&nbsp;|&nbsp;<span class="meta-item">
+    <span class="edit-post">
+        <a href="https://github.com/KonishchevDmitry/blog/tree/master/content/posts/2025-07-22-linux-kernel-vscode.md" rel="noopener noreferrer" target="_blank">Исправить опечатку</a>
+    </span>
+</span>
+
+      
+    </div>
+  </header> <div class="toc side right">
+    <details  open>
+        <summary accesskey="c" title="(Alt + C)">
+            <span class="details">Оглавление</span>
+        </summary>
+
+        <div class="inner"><ul>
+                <li>
+                    <a href="#cc-extension" aria-label="C/C&#43;&#43; extension">C/C++ extension</a></li>
+                <li>
+                    <a href="#clangd" aria-label="clangd">clangd</a></li>
+                <li>
+                    <a href="#%d0%bf%d1%80%d0%b8%d1%81%d1%82%d1%83%d0%bf%d0%b0%d0%b5%d0%bc-%d0%ba-%d1%80%d0%b0%d0%b1%d0%be%d1%82%d0%b5" aria-label="Приступаем к работе">Приступаем к работе</a></li>
+                <li>
+                    <a href="#%d1%80%d0%b0%d0%b1%d0%be%d1%82%d0%b0-%d1%81-%d0%ba%d0%be%d0%b4%d0%be%d0%bc-%d1%8f%d0%b4%d1%80%d0%b0-%d0%b8%d0%b7-macos" aria-label="Работа с кодом ядра из MacOS">Работа с кодом ядра из MacOS</a>
+                </li>
+            </ul>
+        </div>
+    </details>
+</div>
+
+  <div class="post-content"><p>Мне никогда не приходилось заниматься разработкой ядра, но вот в последнее время всё чаще возникает необходимость заглянуть в его исходники, чтобы уточнить для себя, как именно работает тот или иной системный вызов или файл в sysfs/proc. И каждый раз это было жутко неудобно, т. к. IDE сходу не могло адекватно проиндексировать код ядра, чтобы можно было более или менее сносно прыгать по функциям. Поэтому решил потратить какое-то время и разобраться, как можно улучшить эту ситуацию.</p>
+<h2 id="cc-extension">C/C++ extension<a hidden class="anchor" aria-hidden="true" href="#cc-extension">¶</a></h2>
+<p>Если погуглить, то наиболее частая рекомендация сводится к использованию VS Code с расширениями <a href="https://marketplace.visualstudio.com/items?itemName=ms-vscode.cpptools">C/C++</a> и <a href="https://marketplace.visualstudio.com/items?itemName=ms-vscode.makefile-tools">Makefile Tools</a> с примерно следующим <code>.vscode/c_cpp_properties.json</code>:</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    &#34;configurations&#34;: [
+</span></span><span style="display:flex;"><span>        {
+</span></span><span style="display:flex;"><span>            &#34;name&#34;: <span style="color:#a31515">&#34;Linux&#34;</span>,
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            &#34;includePath&#34;: [
+</span></span><span style="display:flex;"><span>                <span style="color:#a31515">&#34;${workspaceFolder}/arch/x86/include/generated&#34;</span>,
+</span></span><span style="display:flex;"><span>                <span style="color:#a31515">&#34;${workspaceFolder}/arch/x86/include&#34;</span>,
+</span></span><span style="display:flex;"><span>                <span style="color:#a31515">&#34;${workspaceFolder}/include&#34;</span>,
+</span></span><span style="display:flex;"><span>                <span style="color:#a31515">&#34;${workspaceFolder}/**&#34;</span>
+</span></span><span style="display:flex;"><span>            ],
+</span></span><span style="display:flex;"><span>            &#34;forcedInclude&#34;: [
+</span></span><span style="display:flex;"><span>                <span style="color:#a31515">&#34;${workspaceFolder}/include/generated/autoconf.h&#34;</span>
+</span></span><span style="display:flex;"><span>            ],
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            &#34;dotConfig&#34;: <span style="color:#a31515">&#34;${workspaceFolder}/.config&#34;</span>,
+</span></span><span style="display:flex;"><span>            &#34;configurationProvider&#34;: <span style="color:#a31515">&#34;ms-vscode.makefile-tools&#34;</span>,
+</span></span><span style="display:flex;"><span>            &#34;compileCommands&#34;: <span style="color:#a31515">&#34;${workspaceFolder}/compile_commands.json&#34;</span>,
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            &#34;compilerPath&#34;: <span style="color:#a31515">&#34;/usr/bin/gcc&#34;</span>,
+</span></span><span style="display:flex;"><span>            &#34;intelliSenseMode&#34;: <span style="color:#a31515">&#34;linux-gcc-x64&#34;</span>,
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            &#34;cStandard&#34;: <span style="color:#a31515">&#34;gnu11&#34;</span>,
+</span></span><span style="display:flex;"><span>            &#34;cppStandard&#34;: <span style="color:#a31515">&#34;gnu++11&#34;</span>
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    ],
+</span></span><span style="display:flex;"><span>    &#34;version&#34;: 4
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>В итоге оно работает, но очень ограниченно: навигация по коду постоянно тормозит и либо вовсе не находит часть символов, либо для части функций находит только их объявление в заголовочном файле, но не реализацию – и нормально работать в таком режиме просто невозможно, т. к. постоянно приходится переключаться на обычный поиск по содержимому файлов.</p>
+<h2 id="clangd">clangd<a hidden class="anchor" aria-hidden="true" href="#clangd">¶</a></h2>
+<p>Но, как оказалось, у вышеупомянутых расширений от Microsoft есть очень достойная альтернатива в виде расширения <a href="https://marketplace.visualstudio.com/items?itemName=llvm-vs-code-extensions.vscode-clangd">clangd</a>, которое работает поверх полноценного language server&rsquo;а <a href="https://clangd.llvm.org/">clangd</a>. И это очень хорошая альтернатива, особенно учитывая то, что с относительно недавних пор ядро Linux <a href="https://docs.kernel.org/kbuild/llvm.html">поддерживает</a> сборку clang&rsquo;ом.</p>
+<p>И оно действительно <strong>работает</strong>. Да – первоначальное построение индекса занимает какое-то время, но вот зато потом IDE видит все символы и, что не менее важно, осуществляет очень быструю навигацию по ним. Проблемы возникают разве что с заголовочными файлами, для которых в силу понятных причин не может быть однозначной информации, с какими флагами компиляции они будут использоваться.</p>
+<h2 id="приступаем-к-работе">Приступаем к работе<a hidden class="anchor" aria-hidden="true" href="#приступаем-к-работе">¶</a></h2>
+<p>Клонируем репозиторий:</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>git clone git@github.com:torvalds/linux.git
+</span></span></code></pre></div><p>Чтобы самому не возиться с конфигурацией ядра, а также работать именно с той, которая будет использоваться в реальной жизни, берем конфигурацию из текущей системы:</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>cat <span style="color:#a31515">&#34;/boot/config-</span><span style="color:#00f">$(</span>uname -r<span style="color:#00f">)</span><span style="color:#a31515">&#34;</span> &gt; .config
+</span></span></code></pre></div><p>Устанавливаем пакеты, которые нам понадобятся для сборки:</p>
+<ul>
+<li>Fedora: <code>sudo dnf install bc bison clang clangd elfutils-libelf-devel flex lld llvm make ncurses-devel openssl-devel zstd</code></li>
+<li>Ubuntu: <code>sudo apt install bc bison clang clangd flex libelf-dev libncurses-dev libssl-dev lld llvm make zstd</code></li>
+</ul>
+<p>В <code>.vscode/settings.json</code> задаём общие настройки проекта:</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    &#34;[c]&#34;: {
+</span></span><span style="display:flex;"><span>        &#34;editor.tabSize&#34;: 8,
+</span></span><span style="display:flex;"><span>        &#34;editor.insertSpaces&#34;: <span style="color:#00f">false</span>,
+</span></span><span style="display:flex;"><span>        &#34;editor.detectIndentation&#34;: <span style="color:#00f">false</span>,
+</span></span><span style="display:flex;"><span>        &#34;editor.rulers&#34;: [80, 100]
+</span></span><span style="display:flex;"><span>    },
+</span></span><span style="display:flex;"><span>    &#34;files.associations&#34;: {
+</span></span><span style="display:flex;"><span>        &#34;*.h&#34;: <span style="color:#a31515">&#34;c&#34;</span>
+</span></span><span style="display:flex;"><span>    },
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    &#34;files.exclude&#34;: {
+</span></span><span style="display:flex;"><span>        &#34;**/modules.order&#34;: <span style="color:#00f">true</span>,
+</span></span><span style="display:flex;"><span>        &#34;**/.*.*.cmd&#34;: <span style="color:#00f">true</span>,
+</span></span><span style="display:flex;"><span>        &#34;**/*.a&#34;: <span style="color:#00f">true</span>,
+</span></span><span style="display:flex;"><span>        &#34;**/*.o&#34;: <span style="color:#00f">true</span>,
+</span></span><span style="display:flex;"><span>        &#34;**/*.ko&#34;: <span style="color:#00f">true</span>,
+</span></span><span style="display:flex;"><span>        &#34;**/*.mod&#34;: <span style="color:#00f">true</span>,
+</span></span><span style="display:flex;"><span>        &#34;**/*.mod.c&#34;: <span style="color:#00f">true</span>,
+</span></span><span style="display:flex;"><span>        &#34;**/*.symvers&#34;: <span style="color:#00f">true</span>
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>Далее устанавливаем расширение <a href="https://marketplace.visualstudio.com/items?itemName=llvm-vs-code-extensions.vscode-clangd">clangd</a> – либо через интерфейс VS Code, либо с помощью команды <code>code --install-extension llvm-vs-code-extensions.vscode-clangd</code>.</p>
+<p>И я очень рекомендую добавить следующий параметр в настройки VS Code, в котором после <code>-j</code> поставить количество ядер в вашем процессоре, т. к. по какой-то причине clangd по умолчанию при индексации использует только часть из них, что на таком большом проекте, как ядро Linux, приводит к невероятно долгой первичной индексации:</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    &#34;clangd.arguments&#34;: [<span style="color:#a31515">&#34;-j&#34;</span>, <span style="color:#a31515">&#34;10&#34;</span>]
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>clangd ожидает, что в корне проекта у нас будет файл <a href="https://clang.llvm.org/docs/JSONCompilationDatabase.html">compile_commands.json</a>, в котором будут указаны опции компиляции каждого <code>*.c</code>-файла проекта. Именно благодаря этому файлу он может правильно проиндексировать проект. Поэтому запускаем следующую команду:</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>make -j <span style="color:#a31515">&#34;</span><span style="color:#00f">$(</span>nproc<span style="color:#00f">)</span><span style="color:#a31515">&#34;</span> LLVM=1 compile_commands.json
+</span></span></code></pre></div><p>&hellip; и идём заниматься своими делами – работать оно будет довольно долго.</p>
+<p>Как только <code>make</code> отработает, и у нас появится <code>compile_commands.json</code>, открываем в VS Code любой <code>*.c</code>-файл, чтобы стриггерить clangd – и он тут же начнёт индексировать наш проект (в status bar будет соответствующая информация о прогрессе индексации). Тут тоже придётся подождать какое-то время, но только в первый раз – при последующем переоткрытии проекта оно будет подхватываться гораздо быстрее.</p>
+<p>Как только индексация закончится, должны заработать все стандартные средства навигации по коду.</p>
+<h2 id="работа-с-кодом-ядра-из-macos">Работа с кодом ядра из MacOS<a hidden class="anchor" aria-hidden="true" href="#работа-с-кодом-ядра-из-macos">¶</a></h2>
+<p>В качестве рабочего инструмента у меня MacBook Pro M1 и, казалось бы, это не самая удобная конфигурация для того, чтобы копаться в исходниках ядра, но, к счастью, это не так.</p>
+<p>Устанавливаем <a href="https://orbstack.dev/">OrbStack</a> и создаём себе виртуальную машину:</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>orbctl create ubuntu kernel
+</span></span></code></pre></div><p>При этом, несмотря на то, что OrbStack поддерживает эмуляцию x86 через <a href="https://developer.apple.com/documentation/apple-silicon/about-the-rosetta-translation-environment">Rosetta</a>, в ней нет необходимости, т. к. при сборке ядра мы можем использовать кросс-компиляцию.</p>
+<p>Заходим на нашу виртуальную машину:</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>orb
+</span></span></code></pre></div><p>и клонируем наш репозиторий.</p>
+<p>Добавляем в самое начало <code>~/.vscode/ssh/config</code> следующую строку:</p>
+<pre tabindex="0"><code>Include ~/.orbstack/ssh/config
+</code></pre><p>А затем с помощью расширения <a href="https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh">Remote - SSH</a> подключаемся VS Code&rsquo;ом к нашей виртуальной машине и выполняем все действия, которые были перечислены в предыдущем разделе, но за одним исключением – при вызове <code>make</code> необходимо указать <code>ARCH=x86</code>, чтобы наша ARM&rsquo;овая виртуалка собрала ядро под целевую архитектуру (x86-64):</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>make -j <span style="color:#a31515">&#34;</span><span style="color:#00f">$(</span>nproc<span style="color:#00f">)</span><span style="color:#a31515">&#34;</span> LLVM=1 ARCH=x86 compile_commands.json
+</span></span></code></pre></div>
+
+  </div>
+
+  <footer class="post-footer">
+  </footer>
+    <div class="comments-separator"></div><script src="https://giscus.app/client.js"
+        data-repo="KonishchevDmitry/blog"
+        data-repo-id="R_kgDOLqoJ-g"
+        data-category="Announcements"
+        data-category-id="DIC_kwDOLqoJ-s4Cefph"
+        data-mapping="pathname"
+        data-strict="1"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="light"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+</article>
+    </main>
+    
+<footer class="footer"><div class="social-icons">
+    <a href="mailto:konishchev@gmail.com" target="_blank" title="Email" style="box-shadow: none">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 21" fill="none" stroke="currentColor" stroke-width="2"
+    stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+    <polyline points="22,6 12,13 2,6"></polyline>
+</svg>
+
+    </a>
+    <a href="https://github.com/KonishchevDmitry" target="_blank" title="GitHub" style="box-shadow: none">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+    stroke-linecap="round" stroke-linejoin="round">
+    <path
+        d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22">
+    </path>
+</svg>
+
+    </a>
+    <a href="https://www.linkedin.com/in/konishchev/" target="_blank" title="LinkedIn" style="box-shadow: none">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+    stroke-linecap="round" stroke-linejoin="round">
+    <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path>
+    <rect x="2" y="9" width="4" height="12"></rect>
+    <circle cx="4" cy="4" r="2"></circle>
+</svg>
+
+    </a>
+    <a href="/rss.xml" target="_blank" title="RSS" style="box-shadow: none">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+    stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 11a9 9 0 0 1 9 9" />
+    <path d="M4 4a16 16 0 0 1 16 16" />
+    <circle cx="5" cy="19" r="1" />
+</svg>
+
+    </a>
+</div>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+    <path d="M12 6H0l6-6z" />
+  </svg>
+</a>
+
+
+
+<script>
+  (function () {
+    let menu = document.getElementById('menu')
+    if (menu) {
+      menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+      menu.onscroll = function () {
+        localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+      }
+    }
+
+    const disableSmoothScroll = '' == '1';
+    const enableInstantClick = '' == '1';
+    
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || disableSmoothScroll || enableInstantClick) {
+      return;
+    }
+    
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener("click", function (e) {
+        e.preventDefault();
+        var id = this.getAttribute("href").substr(1);
+        document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+          behavior: "smooth"
+        });
+        if (id === "top") {
+          history.replaceState(null, null, " ");
+        } else {
+          history.pushState(null, null, `#${id}`);
+        }
+      });
+    });
+  })();
+</script>
+<script>
+  var mybutton = document.getElementById("top-link");
+  window.onscroll = function () {
+    if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+      mybutton.style.visibility = "visible";
+      mybutton.style.opacity = "1";
+    } else {
+      mybutton.style.visibility = "hidden";
+      mybutton.style.opacity = "0";
+    }
+  };
+</script>
+<script>
+  if (window.scrollListeners) {
+    
+    for (const listener of scrollListeners) {
+      window.removeEventListener('scroll', listener)
+    }
+  }
+  window.scrollListeners = []
+</script>
+
+
+
+<script src="/js/medium-zoom.min.js" data-no-instant
+></script>
+<script>
+  document.querySelectorAll('pre > code').forEach((codeblock) => {
+    const container = codeblock.parentNode.parentNode;
+
+    const copybutton = document.createElement('button');
+    copybutton.classList.add('copy-code');
+    copybutton.innerText = 'копировать';
+
+    function copyingDone() {
+      copybutton.innerText = 'скопировано!';
+      setTimeout(() => {
+        copybutton.innerText = 'копировать';
+      }, 2000);
+    }
+
+    copybutton.addEventListener('click', (cb) => {
+      if ('clipboard' in navigator) {
+        navigator.clipboard.writeText(codeblock.textContent);
+        copyingDone();
+        return;
+      }
+
+      const range = document.createRange();
+      range.selectNodeContents(codeblock);
+      const selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+      try {
+        document.execCommand('copy');
+        copyingDone();
+      } catch (e) { };
+      selection.removeRange(range);
+    });
+
+    if (container.classList.contains("highlight")) {
+      container.appendChild(copybutton);
+    } else if (container.parentNode.firstChild == container) {
+      
+    } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+      
+      codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+    } else {
+      
+      codeblock.parentNode.appendChild(copybutton);
+    }
+  });
+</script>
+
+
+
+
+<script>
+  
+  
+  (function() {
+    const enableTocScroll = '1' == '1'
+    if (!enableTocScroll) {
+      return
+    }
+    if (!document.querySelector('.toc')) {
+      console.log('no toc found, ignore toc scroll')
+      return
+    }
+    
+
+    
+    const scrollListeners = window.scrollListeners
+    const headings = document.querySelectorAll('h1[id],h2[id],h3[id],h4[id],h5[id]');
+    const activeClass = 'active';
+
+    
+    let activeHeading = headings[0];
+    getLinkByHeading(activeHeading).classList.add(activeClass);
+
+    const onScroll = () => {
+      const passedHeadings = [];
+      for (const h of headings) {
+        
+        if (getOffsetTop(h) < 5) {
+          passedHeadings.push(h)
+        } else {
+          break;
+        }
+      }
+      if (passedHeadings.length > 0) {
+        newActiveHeading = passedHeadings[passedHeadings.length - 1];
+      } else {
+        newActiveHeading = headings[0];
+      }
+      if (activeHeading != newActiveHeading) {
+        getLinkByHeading(activeHeading).classList.remove(activeClass);
+        activeHeading = newActiveHeading;
+        getLinkByHeading(activeHeading).classList.add(activeClass);
+      }
+    }
+
+    let timer = null;
+    const scrollListener = () => {
+      if (timer !== null) {
+        clearTimeout(timer)
+      }
+      timer = setTimeout(onScroll, 50)
+    }
+    window.addEventListener('scroll', scrollListener, false);
+    scrollListeners.push(scrollListener)
+
+    function getLinkByHeading(heading) {
+      const id = encodeURI(heading.getAttribute('id')).toLowerCase();
+      return document.querySelector(`.toc ul li a[href="#${id}"]`);
+    }
+
+    function getOffsetTop(heading) {
+      if (!heading.getClientRects().length) {
+        return 0;
+      }
+      let rect = heading.getBoundingClientRect();
+      return rect.top
+    }
+  })();
+  </script>
+
+</body>
+
+</html>
