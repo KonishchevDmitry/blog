@@ -68,7 +68,7 @@
   "keywords": [
     
   ],
-  "wordCount" : "738",
+  "wordCount" : "740",
   "inLanguage": "ru",
   "datePublished": "2025-07-22T09:30:09+03:00",
   "dateModified": "2025-07-22T19:28:28+03:00",
@@ -205,8 +205,8 @@
 <div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>cp <span style="color:#a31515">&#34;/boot/config-</span><span style="color:#00f">$(</span>uname -r<span style="color:#00f">)</span><span style="color:#a31515">&#34;</span> .config
 </span></span></code></pre></div><p>Устанавливаем пакеты, которые нам понадобятся для сборки:</p>
 <ul>
-<li>Fedora: <code>sudo dnf install bc bison clang clangd elfutils-libelf-devel flex lld llvm make ncurses-devel openssl-devel zstd</code></li>
-<li>Ubuntu: <code>sudo apt install bc bison clang clangd flex libelf-dev libncurses-dev libssl-dev lld llvm make zstd</code></li>
+<li>Fedora: <code>sudo dnf install bc bison clang clangd elfutils-libelf-devel flex lld llvm make ncurses-devel openssl-devel xz zstd</code></li>
+<li>Ubuntu: <code>sudo apt install bc bison clang clangd flex libelf-dev libncurses-dev libssl-dev lld llvm make xz-utils zstd</code></li>
 </ul>
 <p>В <code>.vscode/settings.json</code> задаём общие настройки проекта:</p>
 <div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-json" data-lang="json"><span style="display:flex;"><span>{

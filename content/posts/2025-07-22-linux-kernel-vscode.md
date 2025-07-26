@@ -64,8 +64,8 @@ cp "/boot/config-$(uname -r)" .config
 ```
 
 Устанавливаем пакеты, которые нам понадобятся для сборки:
-* Fedora: `sudo dnf install bc bison clang clangd elfutils-libelf-devel flex lld llvm make ncurses-devel openssl-devel zstd`
-* Ubuntu: `sudo apt install bc bison clang clangd flex libelf-dev libncurses-dev libssl-dev lld llvm make zstd`
+* Fedora: `sudo dnf install bc bison clang clangd elfutils-libelf-devel flex lld llvm make ncurses-devel openssl-devel xz zstd`
+* Ubuntu: `sudo apt install bc bison clang clangd flex libelf-dev libncurses-dev libssl-dev lld llvm make xz-utils zstd`
 
 В `.vscode/settings.json` задаём общие настройки проекта:
 
