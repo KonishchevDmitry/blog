@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="ru" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>WhatsApp сканирует сеть? | Dmitry Konishchev&#39;s small blog</title>
+<meta name="keywords" content="">
+<meta name="description" content="Совершенно случайно наткнулся на интересное:
+У меня дома стриггерился алерт: мой домашний сервачок (он же роутер) помимо всего прочего отслеживает количество уникальных от-forward&rsquo;енных $src_ip &#43; $dst_ip &#43; $dst_port – и алертит, когда их количество превышает некоторый порог.
+И вот за последние сутки с моего телефона &#43; телефона жены 2560 &#43; 4082 уникальных пар $dst_ip &#43; $dst_port (где 602x22 ниже – это соединения на 22 порт на 602 разных IP-адреса):
+kate-mobile.lan (4082 IP&#43;port pairs): 3117 TCP (1534x443, 602x22, 261x80, 237x554, 220x53, 29x23, 28x983, 21x553, 20x179, 12x1443, 9x5222, 6x5228, 4x4460, 4x21, 2x571, 2x9243, 2x240, 2x383, 2x185, 2x260, 2x299, 2x237, 2x336, 2x131, 2x512, 1x464, 1x734, 1x4416, 1x371, 1x10, 1x863, 1x895, 1x759, 1x815, 1x178, 1x830, 1x271, 1x838, 1x707, 1x629, 1x174, 1x1003, 1x894, 1x3237, 1x887, 1x962, 1x603, 1x855, 1x241, 1x494, 1x540, 1x181, 1x352, 1x454, 1x373, 1x654, 1x56, 1x646, 1x175, 1x876, 1x810, 1x556, 1x395, 1x483, 1x697, 1x212, 1x34, 1x588, 1x348, 1x605, 1x680, 1x460, 1x401, 1x224, 1x143, 1x161, 1x104, 1x655, 1x872, 1x521, 1x459, 1x911, 1x705, 1x317, 1x377, 1x807, 1x323, 1x893, 1x866, 1x142, 1x1001, 1x170, 1x920, 1x843, 1x209, 1x463, 1x156, 1x569, 1x952, 1x701, 1x184, 1x597, 1x389, 1x647, 1x8543, 1x487, 1x624, 1x537, 1x814, 1x259, 1x578, 1x26, 1x904, 1x751, 1x652, 1x795, 1x234, 1x671, 1x45, 1x4477, 1x307, 1x635, 1x651, 1x227, 1x806, 1x752, 1x203, 1x220, 1x582, 1x568, 1x153, 1x844, 1x402), 965 UDP (379x443, 278x53, 116x554, 83x123, 38x22, 22x23, 7x2002, 6x983, 4x179, 2x4123, 2x512, 2x21, 2x553, 1x363, 1x652, 1x654, 1x1003, 1x299, 1x307, 1x377, 1x680, 1x807, 1x804, 1x966, 1x685, 1x240, 1x463, 1x655, 1x806, 1x45, 1x383, 1x336, 1x153, 1x260, 1x28, 1x241, 1x603)
+mobile.lan (2560 IP&#43;port pairs): 1899 TCP (814x443, 405x22, 171x554, 168x80, 160x53, 23x983, 18x179, 18x1443, 15x23, 10x553, 9x5222, 6x21, 5x7275, 3x5228, 2x19302, 1x759, 1x37, 1x629, 1x685, 1x581, 1x582, 1x10000, 1x142, 1x250, 1x846, 1x125, 1x872, 1x657, 1x8543, 1x604, 1x90, 1x727, 1x567, 1x911, 1x739, 1x810, 1x4477, 1x866, 1x26, 1x491, 1x10, 1x156, 1x626, 1x178, 1x422, 1x977, 1x155, 1x12, 1x402, 1x683, 1x21007, 1x306, 1x595, 1x184, 1x4416, 1x472, 1x14, 1x904, 1x166, 1x165, 1x753, 1x988, 1x4434, 1x11, 1x28, 1x317, 1x622, 1x535, 1x718, 1x686, 1x637, 1x207, 1x244, 1x153, 1x7000, 1x8443, 1x966, 1x383, 1x5223, 1x985, 1x161, 1x994, 1x395, 1x898, 1x39, 1x592, 1x6447), 661 UDP (307x443, 168x53, 81x554, 36x123, 24x22, 10x23, 6x983, 6x179, 4x19302, 3x553, 3x21, 1x153, 1x685, 1x626, 1x155, 1x592, 1x19000, 1x491, 1x306, 1x472, 1x125, 1x8443, 1x28, 1x966)
+Поставил себе PCAPdroid на телефон, и выяснилось, что WhatsApp (я им совсем не пользуюсь – установлен по необходимости):">
+<meta name="author" content="">
+<link rel="canonical" href="https://konishchev.ru/posts/whatsapp-scans-network/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.min.27b0fc6a9e4df4110536f685cccf8ca9977c200af0d8eceaa8e77a5d07235262.css" integrity="sha256-J7D8ap5N9BEFNvaFzM&#43;MqZd8IArw2OzqqOd6XQcjUmI=" rel="preload stylesheet" as="style">
+
+<!-- Console icon by Icons8 (https://icons8.com/icon/pSUzrDn0xTlh/console) -->
+
+<link rel="icon" type="image/png" sizes="16x16" href="/images/favicon/16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/images/favicon/32.png">
+<link rel="icon" type="image/png" sizes="72x72" href="/images/favicon/72.png">
+<link rel="icon" type="image/png" sizes="96x96" href="/images/favicon/96.png">
+
+<link rel="apple-touch-icon" type="image/png" sizes="57x57" href="/images/favicon/57.png">
+<link rel="apple-touch-icon" type="image/png" sizes="60x60" href="/images/favicon/60.png">
+<link rel="apple-touch-icon" type="image/png" sizes="72x72" href="/images/favicon/72.png">
+<link rel="apple-touch-icon" type="image/png" sizes="76x76" href="/images/favicon/76.png">
+
+
+<link rel="alternate" hreflang="ru" href="https://konishchev.ru/posts/whatsapp-scans-network/">
+
+<meta name="twitter:title" content="WhatsApp сканирует сеть? | Dmitry Konishchev&#39;s small blog" />
+<meta name="twitter:description" content="Совершенно случайно наткнулся на интересное:
+У меня дома стриггерился алерт: мой домашний сервачок (он же роутер) помимо всего прочего отслеживает количество уникальных от-forward&rsquo;енных $src_ip &#43; $dst_ip &#43; $dst_port – и алертит, когда их количество превышает некоторый порог.
+И вот за последние сутки с моего телефона &#43; телефона жены 2560 &#43; 4082 уникальных пар $dst_ip &#43; $dst_port (где 602x22 ниже – это соединения на 22 порт на 602 разных IP-адреса):
+kate-mobile.lan (4082 IP&#43;port pairs): 3117 TCP (1534x443, 602x22, 261x80, 237x554, 220x53, 29x23, 28x983, 21x553, 20x179, 12x1443, 9x5222, 6x5228, 4x4460, 4x21, 2x571, 2x9243, 2x240, 2x383, 2x185, 2x260, 2x299, 2x237, 2x336, 2x131, 2x512, 1x464, 1x734, 1x4416, 1x371, 1x10, 1x863, 1x895, 1x759, 1x815, 1x178, 1x830, 1x271, 1x838, 1x707, 1x629, 1x174, 1x1003, 1x894, 1x3237, 1x887, 1x962, 1x603, 1x855, 1x241, 1x494, 1x540, 1x181, 1x352, 1x454, 1x373, 1x654, 1x56, 1x646, 1x175, 1x876, 1x810, 1x556, 1x395, 1x483, 1x697, 1x212, 1x34, 1x588, 1x348, 1x605, 1x680, 1x460, 1x401, 1x224, 1x143, 1x161, 1x104, 1x655, 1x872, 1x521, 1x459, 1x911, 1x705, 1x317, 1x377, 1x807, 1x323, 1x893, 1x866, 1x142, 1x1001, 1x170, 1x920, 1x843, 1x209, 1x463, 1x156, 1x569, 1x952, 1x701, 1x184, 1x597, 1x389, 1x647, 1x8543, 1x487, 1x624, 1x537, 1x814, 1x259, 1x578, 1x26, 1x904, 1x751, 1x652, 1x795, 1x234, 1x671, 1x45, 1x4477, 1x307, 1x635, 1x651, 1x227, 1x806, 1x752, 1x203, 1x220, 1x582, 1x568, 1x153, 1x844, 1x402), 965 UDP (379x443, 278x53, 116x554, 83x123, 38x22, 22x23, 7x2002, 6x983, 4x179, 2x4123, 2x512, 2x21, 2x553, 1x363, 1x652, 1x654, 1x1003, 1x299, 1x307, 1x377, 1x680, 1x807, 1x804, 1x966, 1x685, 1x240, 1x463, 1x655, 1x806, 1x45, 1x383, 1x336, 1x153, 1x260, 1x28, 1x241, 1x603)
+mobile.lan (2560 IP&#43;port pairs): 1899 TCP (814x443, 405x22, 171x554, 168x80, 160x53, 23x983, 18x179, 18x1443, 15x23, 10x553, 9x5222, 6x21, 5x7275, 3x5228, 2x19302, 1x759, 1x37, 1x629, 1x685, 1x581, 1x582, 1x10000, 1x142, 1x250, 1x846, 1x125, 1x872, 1x657, 1x8543, 1x604, 1x90, 1x727, 1x567, 1x911, 1x739, 1x810, 1x4477, 1x866, 1x26, 1x491, 1x10, 1x156, 1x626, 1x178, 1x422, 1x977, 1x155, 1x12, 1x402, 1x683, 1x21007, 1x306, 1x595, 1x184, 1x4416, 1x472, 1x14, 1x904, 1x166, 1x165, 1x753, 1x988, 1x4434, 1x11, 1x28, 1x317, 1x622, 1x535, 1x718, 1x686, 1x637, 1x207, 1x244, 1x153, 1x7000, 1x8443, 1x966, 1x383, 1x5223, 1x985, 1x161, 1x994, 1x395, 1x898, 1x39, 1x592, 1x6447), 661 UDP (307x443, 168x53, 81x554, 36x123, 24x22, 10x23, 6x983, 6x179, 4x19302, 3x553, 3x21, 1x153, 1x685, 1x626, 1x155, 1x592, 1x19000, 1x491, 1x306, 1x472, 1x125, 1x8443, 1x28, 1x966)
+Поставил себе PCAPdroid на телефон, и выяснилось, что WhatsApp (я им совсем не пользуюсь – установлен по необходимости):" />
+<meta property="og:title" content="WhatsApp сканирует сеть? | Dmitry Konishchev&#39;s small blog" />
+<meta property="og:description" content="Совершенно случайно наткнулся на интересное:
+У меня дома стриггерился алерт: мой домашний сервачок (он же роутер) помимо всего прочего отслеживает количество уникальных от-forward&rsquo;енных $src_ip &#43; $dst_ip &#43; $dst_port – и алертит, когда их количество превышает некоторый порог.
+И вот за последние сутки с моего телефона &#43; телефона жены 2560 &#43; 4082 уникальных пар $dst_ip &#43; $dst_port (где 602x22 ниже – это соединения на 22 порт на 602 разных IP-адреса):
+kate-mobile.lan (4082 IP&#43;port pairs): 3117 TCP (1534x443, 602x22, 261x80, 237x554, 220x53, 29x23, 28x983, 21x553, 20x179, 12x1443, 9x5222, 6x5228, 4x4460, 4x21, 2x571, 2x9243, 2x240, 2x383, 2x185, 2x260, 2x299, 2x237, 2x336, 2x131, 2x512, 1x464, 1x734, 1x4416, 1x371, 1x10, 1x863, 1x895, 1x759, 1x815, 1x178, 1x830, 1x271, 1x838, 1x707, 1x629, 1x174, 1x1003, 1x894, 1x3237, 1x887, 1x962, 1x603, 1x855, 1x241, 1x494, 1x540, 1x181, 1x352, 1x454, 1x373, 1x654, 1x56, 1x646, 1x175, 1x876, 1x810, 1x556, 1x395, 1x483, 1x697, 1x212, 1x34, 1x588, 1x348, 1x605, 1x680, 1x460, 1x401, 1x224, 1x143, 1x161, 1x104, 1x655, 1x872, 1x521, 1x459, 1x911, 1x705, 1x317, 1x377, 1x807, 1x323, 1x893, 1x866, 1x142, 1x1001, 1x170, 1x920, 1x843, 1x209, 1x463, 1x156, 1x569, 1x952, 1x701, 1x184, 1x597, 1x389, 1x647, 1x8543, 1x487, 1x624, 1x537, 1x814, 1x259, 1x578, 1x26, 1x904, 1x751, 1x652, 1x795, 1x234, 1x671, 1x45, 1x4477, 1x307, 1x635, 1x651, 1x227, 1x806, 1x752, 1x203, 1x220, 1x582, 1x568, 1x153, 1x844, 1x402), 965 UDP (379x443, 278x53, 116x554, 83x123, 38x22, 22x23, 7x2002, 6x983, 4x179, 2x4123, 2x512, 2x21, 2x553, 1x363, 1x652, 1x654, 1x1003, 1x299, 1x307, 1x377, 1x680, 1x807, 1x804, 1x966, 1x685, 1x240, 1x463, 1x655, 1x806, 1x45, 1x383, 1x336, 1x153, 1x260, 1x28, 1x241, 1x603)
+mobile.lan (2560 IP&#43;port pairs): 1899 TCP (814x443, 405x22, 171x554, 168x80, 160x53, 23x983, 18x179, 18x1443, 15x23, 10x553, 9x5222, 6x21, 5x7275, 3x5228, 2x19302, 1x759, 1x37, 1x629, 1x685, 1x581, 1x582, 1x10000, 1x142, 1x250, 1x846, 1x125, 1x872, 1x657, 1x8543, 1x604, 1x90, 1x727, 1x567, 1x911, 1x739, 1x810, 1x4477, 1x866, 1x26, 1x491, 1x10, 1x156, 1x626, 1x178, 1x422, 1x977, 1x155, 1x12, 1x402, 1x683, 1x21007, 1x306, 1x595, 1x184, 1x4416, 1x472, 1x14, 1x904, 1x166, 1x165, 1x753, 1x988, 1x4434, 1x11, 1x28, 1x317, 1x622, 1x535, 1x718, 1x686, 1x637, 1x207, 1x244, 1x153, 1x7000, 1x8443, 1x966, 1x383, 1x5223, 1x985, 1x161, 1x994, 1x395, 1x898, 1x39, 1x592, 1x6447), 661 UDP (307x443, 168x53, 81x554, 36x123, 24x22, 10x23, 6x983, 6x179, 4x19302, 3x553, 3x21, 1x153, 1x685, 1x626, 1x155, 1x592, 1x19000, 1x491, 1x306, 1x472, 1x125, 1x8443, 1x28, 1x966)
+Поставил себе PCAPdroid на телефон, и выяснилось, что WhatsApp (я им совсем не пользуюсь – установлен по необходимости):" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://konishchev.ru/posts/whatsapp-scans-network/" />
+<meta property="article:section" content="posts" />
+  <meta property="article:published_time" content="2025-09-07T12:55:49&#43;03:00" />
+  <meta property="article:modified_time" content="2025-09-07T12:39:59&#43;03:00" />
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "Posts",
+      "item": "https://konishchev.ru/posts/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "WhatsApp сканирует сеть?",
+      "item": "https://konishchev.ru/posts/whatsapp-scans-network/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "WhatsApp сканирует сеть? | Dmitry Konishchev's small blog",
+  "name": "WhatsApp сканирует сеть?",
+  "description": "Совершенно случайно наткнулся на интересное:\nУ меня дома стриггерился алерт: мой домашний сервачок (он же роутер) помимо всего прочего отслеживает количество уникальных от-forward\u0026rsquo;енных $src_ip + $dst_ip + $dst_port – и алертит, когда их количество превышает некоторый порог.\nИ вот за последние сутки с моего телефона + телефона жены 2560 + 4082 уникальных пар $dst_ip + $dst_port (где 602x22 ниже – это соединения на 22 порт на 602 разных IP-адреса):\nkate-mobile.lan (4082 IP+port pairs): 3117 TCP (1534x443, 602x22, 261x80, 237x554, 220x53, 29x23, 28x983, 21x553, 20x179, 12x1443, 9x5222, 6x5228, 4x4460, 4x21, 2x571, 2x9243, 2x240, 2x383, 2x185, 2x260, 2x299, 2x237, 2x336, 2x131, 2x512, 1x464, 1x734, 1x4416, 1x371, 1x10, 1x863, 1x895, 1x759, 1x815, 1x178, 1x830, 1x271, 1x838, 1x707, 1x629, 1x174, 1x1003, 1x894, 1x3237, 1x887, 1x962, 1x603, 1x855, 1x241, 1x494, 1x540, 1x181, 1x352, 1x454, 1x373, 1x654, 1x56, 1x646, 1x175, 1x876, 1x810, 1x556, 1x395, 1x483, 1x697, 1x212, 1x34, 1x588, 1x348, 1x605, 1x680, 1x460, 1x401, 1x224, 1x143, 1x161, 1x104, 1x655, 1x872, 1x521, 1x459, 1x911, 1x705, 1x317, 1x377, 1x807, 1x323, 1x893, 1x866, 1x142, 1x1001, 1x170, 1x920, 1x843, 1x209, 1x463, 1x156, 1x569, 1x952, 1x701, 1x184, 1x597, 1x389, 1x647, 1x8543, 1x487, 1x624, 1x537, 1x814, 1x259, 1x578, 1x26, 1x904, 1x751, 1x652, 1x795, 1x234, 1x671, 1x45, 1x4477, 1x307, 1x635, 1x651, 1x227, 1x806, 1x752, 1x203, 1x220, 1x582, 1x568, 1x153, 1x844, 1x402), 965 UDP (379x443, 278x53, 116x554, 83x123, 38x22, 22x23, 7x2002, 6x983, 4x179, 2x4123, 2x512, 2x21, 2x553, 1x363, 1x652, 1x654, 1x1003, 1x299, 1x307, 1x377, 1x680, 1x807, 1x804, 1x966, 1x685, 1x240, 1x463, 1x655, 1x806, 1x45, 1x383, 1x336, 1x153, 1x260, 1x28, 1x241, 1x603) mobile.lan (2560 IP+port pairs): 1899 TCP (814x443, 405x22, 171x554, 168x80, 160x53, 23x983, 18x179, 18x1443, 15x23, 10x553, 9x5222, 6x21, 5x7275, 3x5228, 2x19302, 1x759, 1x37, 1x629, 1x685, 1x581, 1x582, 1x10000, 1x142, 1x250, 1x846, 1x125, 1x872, 1x657, 1x8543, 1x604, 1x90, 1x727, 1x567, 1x911, 1x739, 1x810, 1x4477, 1x866, 1x26, 1x491, 1x10, 1x156, 1x626, 1x178, 1x422, 1x977, 1x155, 1x12, 1x402, 1x683, 1x21007, 1x306, 1x595, 1x184, 1x4416, 1x472, 1x14, 1x904, 1x166, 1x165, 1x753, 1x988, 1x4434, 1x11, 1x28, 1x317, 1x622, 1x535, 1x718, 1x686, 1x637, 1x207, 1x244, 1x153, 1x7000, 1x8443, 1x966, 1x383, 1x5223, 1x985, 1x161, 1x994, 1x395, 1x898, 1x39, 1x592, 1x6447), 661 UDP (307x443, 168x53, 81x554, 36x123, 24x22, 10x23, 6x983, 6x179, 4x19302, 3x553, 3x21, 1x153, 1x685, 1x626, 1x155, 1x592, 1x19000, 1x491, 1x306, 1x472, 1x125, 1x8443, 1x28, 1x966) Поставил себе PCAPdroid на телефон, и выяснилось, что WhatsApp (я им совсем не пользуюсь – установлен по необходимости):\n",
+  "keywords": [
+    
+  ],
+  "wordCount" : "500",
+  "inLanguage": "ru",
+  "datePublished": "2025-09-07T12:55:49+03:00",
+  "dateModified": "2025-09-07T12:39:59+03:00",
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://konishchev.ru/posts/whatsapp-scans-network/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Dmitry Konishchev's small blog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://konishchev.ru/favicon.ico"
+    }
+  }
+}
+</script>
+<script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();
+    for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+    k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(96897335, "init", {
+        clickmap:true,
+        trackLinks:true,
+        accurateTrackBounce:true
+    });
+</script>
+<noscript><div><img src="https://mc.yandex.ru/watch/96897335" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+</noscript>
+
+</head>
+
+<body class=" type-posts kind-page layout-" id="top">
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://konishchev.ru/" accesskey="h" title="Dmitry Konishchev&#39;s small blog (Alt + H)">Dmitry Konishchev&#39;s small blog</a>
+            <span class="logo-switches">
+            </span>
+        </div>
+        <ul id="menu">
+        </ul>
+    </nav>
+</header>
+<main class="main post">
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">WhatsApp сканирует сеть?</h1>
+    <div class="post-meta"><span class="meta-item">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-calendar" style="user-select: text;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" style="user-select: text;"></rect><line x1="16" y1="2" x2="16" y2="6" style="user-select: text;"></line><line x1="8" y1="2" x2="8" y2="6" style="user-select: text;"></line><line x1="3" y1="10" x2="21" y2="10" style="user-select: text;"></line></svg>
+  <span>7 сентября 2025</span></span>
+&nbsp;|&nbsp;<span class="meta-item">
+    <span class="edit-post">
+        <a href="https://github.com/KonishchevDmitry/blog/tree/master/content/posts/2025-09-07-whatsapp-scans-network.md" rel="noopener noreferrer" target="_blank">Исправить опечатку</a>
+    </span>
+</span>
+
+      
+    </div>
+  </header> 
+
+  <div class="post-content"><p>Совершенно случайно наткнулся на интересное:</p>
+<p>У меня дома стриггерился алерт: мой домашний сервачок (он же роутер) помимо всего прочего отслеживает количество уникальных от-forward&rsquo;енных <code>$src_ip + $dst_ip + $dst_port</code> – и алертит, когда их количество превышает некоторый порог.</p>
+<p>И вот за последние сутки с моего телефона + телефона жены 2560 + 4082 уникальных пар <code>$dst_ip + $dst_port</code> (где <code>602x22</code> ниже – это соединения на 22 порт на 602 разных IP-адреса):</p>
+<pre tabindex="0"><code>kate-mobile.lan (4082 IP+port pairs): 3117 TCP (1534x443, 602x22, 261x80, 237x554, 220x53, 29x23, 28x983, 21x553, 20x179, 12x1443, 9x5222, 6x5228, 4x4460, 4x21, 2x571, 2x9243, 2x240, 2x383, 2x185, 2x260, 2x299, 2x237, 2x336, 2x131, 2x512, 1x464, 1x734, 1x4416, 1x371, 1x10, 1x863, 1x895, 1x759, 1x815, 1x178, 1x830, 1x271, 1x838, 1x707, 1x629, 1x174, 1x1003, 1x894, 1x3237, 1x887, 1x962, 1x603, 1x855, 1x241, 1x494, 1x540, 1x181, 1x352, 1x454, 1x373, 1x654, 1x56, 1x646, 1x175, 1x876, 1x810, 1x556, 1x395, 1x483, 1x697, 1x212, 1x34, 1x588, 1x348, 1x605, 1x680, 1x460, 1x401, 1x224, 1x143, 1x161, 1x104, 1x655, 1x872, 1x521, 1x459, 1x911, 1x705, 1x317, 1x377, 1x807, 1x323, 1x893, 1x866, 1x142, 1x1001, 1x170, 1x920, 1x843, 1x209, 1x463, 1x156, 1x569, 1x952, 1x701, 1x184, 1x597, 1x389, 1x647, 1x8543, 1x487, 1x624, 1x537, 1x814, 1x259, 1x578, 1x26, 1x904, 1x751, 1x652, 1x795, 1x234, 1x671, 1x45, 1x4477, 1x307, 1x635, 1x651, 1x227, 1x806, 1x752, 1x203, 1x220, 1x582, 1x568, 1x153, 1x844, 1x402), 965 UDP (379x443, 278x53, 116x554, 83x123, 38x22, 22x23, 7x2002, 6x983, 4x179, 2x4123, 2x512, 2x21, 2x553, 1x363, 1x652, 1x654, 1x1003, 1x299, 1x307, 1x377, 1x680, 1x807, 1x804, 1x966, 1x685, 1x240, 1x463, 1x655, 1x806, 1x45, 1x383, 1x336, 1x153, 1x260, 1x28, 1x241, 1x603)
+mobile.lan (2560 IP+port pairs): 1899 TCP (814x443, 405x22, 171x554, 168x80, 160x53, 23x983, 18x179, 18x1443, 15x23, 10x553, 9x5222, 6x21, 5x7275, 3x5228, 2x19302, 1x759, 1x37, 1x629, 1x685, 1x581, 1x582, 1x10000, 1x142, 1x250, 1x846, 1x125, 1x872, 1x657, 1x8543, 1x604, 1x90, 1x727, 1x567, 1x911, 1x739, 1x810, 1x4477, 1x866, 1x26, 1x491, 1x10, 1x156, 1x626, 1x178, 1x422, 1x977, 1x155, 1x12, 1x402, 1x683, 1x21007, 1x306, 1x595, 1x184, 1x4416, 1x472, 1x14, 1x904, 1x166, 1x165, 1x753, 1x988, 1x4434, 1x11, 1x28, 1x317, 1x622, 1x535, 1x718, 1x686, 1x637, 1x207, 1x244, 1x153, 1x7000, 1x8443, 1x966, 1x383, 1x5223, 1x985, 1x161, 1x994, 1x395, 1x898, 1x39, 1x592, 1x6447), 661 UDP (307x443, 168x53, 81x554, 36x123, 24x22, 10x23, 6x983, 6x179, 4x19302, 3x553, 3x21, 1x153, 1x685, 1x626, 1x155, 1x592, 1x19000, 1x491, 1x306, 1x472, 1x125, 1x8443, 1x28, 1x966)
+</code></pre><p>Поставил себе <a href="https://play.google.com/store/apps/details?id=com.emanuelef.remote_capture">PCAPdroid</a> на телефон, и выяснилось, что WhatsApp (я им совсем не пользуюсь – установлен по необходимости):</p>
+<ul>
+<li>За последний месяц съел 23 MB Wi-Fi трафика.</li>
+<li>За <strong>сегодняшний день</strong> съел 92 MB Wi-Fi трафика.</li>
+<li>Постоянно открывает соединения на разные IP и всякие мутные порты (ssh, ntp, ftp).</li>
+</ul>
+<p>Хотелось бы верить, что это какая-то очередная защита от блокировок или вроде того, но, учитывая недавние истории про <a href="https://habr.com/ru/articles/915732/">слежку за пользователями на Android</a>, что-то не очень верится. :)</p>
+<p>Как-то более глубоко исследовать эту ситуацию, честно говоря, нет желания (да и наверняка он подобными сканированиями занимается только изредка, чтобы не привлекать к себе лишнего внимания) – поэтому всё выше написанное исключительно JFYI, без каких-либо интересных подробностей.</p>
+<p>P.S.: Большая просьба не воспринимать это как очередную рекламу в пользу всем известного мессенджера, который сейчас активно продвигается – все совпадения случайны.</p>
+
+
+  </div>
+
+  <footer class="post-footer">
+  </footer>
+    <div class="comments-separator"></div><script src="https://giscus.app/client.js"
+        data-repo="KonishchevDmitry/blog"
+        data-repo-id="R_kgDOLqoJ-g"
+        data-category="Announcements"
+        data-category-id="DIC_kwDOLqoJ-s4Cefph"
+        data-mapping="pathname"
+        data-strict="1"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="light"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+</article>
+    </main>
+    
+<footer class="footer"><div class="social-icons">
+    <a href="mailto:konishchev@gmail.com" target="_blank" title="Email" style="box-shadow: none">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 21" fill="none" stroke="currentColor" stroke-width="2"
+    stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+    <polyline points="22,6 12,13 2,6"></polyline>
+</svg>
+
+    </a>
+    <a href="https://github.com/KonishchevDmitry" target="_blank" title="GitHub" style="box-shadow: none">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+    stroke-linecap="round" stroke-linejoin="round">
+    <path
+        d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22">
+    </path>
+</svg>
+
+    </a>
+    <a href="https://www.linkedin.com/in/konishchev/" target="_blank" title="LinkedIn" style="box-shadow: none">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+    stroke-linecap="round" stroke-linejoin="round">
+    <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path>
+    <rect x="2" y="9" width="4" height="12"></rect>
+    <circle cx="4" cy="4" r="2"></circle>
+</svg>
+
+    </a>
+    <a href="/rss.xml" target="_blank" title="RSS" style="box-shadow: none">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+    stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 11a9 9 0 0 1 9 9" />
+    <path d="M4 4a16 16 0 0 1 16 16" />
+    <circle cx="5" cy="19" r="1" />
+</svg>
+
+    </a>
+</div>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+    <path d="M12 6H0l6-6z" />
+  </svg>
+</a>
+
+
+
+<script>
+  (function () {
+    let menu = document.getElementById('menu')
+    if (menu) {
+      menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+      menu.onscroll = function () {
+        localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+      }
+    }
+
+    const disableSmoothScroll = '' == '1';
+    const enableInstantClick = '' == '1';
+    
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || disableSmoothScroll || enableInstantClick) {
+      return;
+    }
+    
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener("click", function (e) {
+        e.preventDefault();
+        var id = this.getAttribute("href").substr(1);
+        document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+          behavior: "smooth"
+        });
+        if (id === "top") {
+          history.replaceState(null, null, " ");
+        } else {
+          history.pushState(null, null, `#${id}`);
+        }
+      });
+    });
+  })();
+</script>
+<script>
+  var mybutton = document.getElementById("top-link");
+  window.onscroll = function () {
+    if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+      mybutton.style.visibility = "visible";
+      mybutton.style.opacity = "1";
+    } else {
+      mybutton.style.visibility = "hidden";
+      mybutton.style.opacity = "0";
+    }
+  };
+</script>
+<script>
+  if (window.scrollListeners) {
+    
+    for (const listener of scrollListeners) {
+      window.removeEventListener('scroll', listener)
+    }
+  }
+  window.scrollListeners = []
+</script>
+
+
+
+<script src="/js/medium-zoom.min.js" data-no-instant
+></script>
+<script>
+  document.querySelectorAll('pre > code').forEach((codeblock) => {
+    const container = codeblock.parentNode.parentNode;
+
+    const copybutton = document.createElement('button');
+    copybutton.classList.add('copy-code');
+    copybutton.innerText = 'копировать';
+
+    function copyingDone() {
+      copybutton.innerText = 'скопировано!';
+      setTimeout(() => {
+        copybutton.innerText = 'копировать';
+      }, 2000);
+    }
+
+    copybutton.addEventListener('click', (cb) => {
+      if ('clipboard' in navigator) {
+        navigator.clipboard.writeText(codeblock.textContent);
+        copyingDone();
+        return;
+      }
+
+      const range = document.createRange();
+      range.selectNodeContents(codeblock);
+      const selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+      try {
+        document.execCommand('copy');
+        copyingDone();
+      } catch (e) { };
+      selection.removeRange(range);
+    });
+
+    if (container.classList.contains("highlight")) {
+      container.appendChild(copybutton);
+    } else if (container.parentNode.firstChild == container) {
+      
+    } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+      
+      codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+    } else {
+      
+      codeblock.parentNode.appendChild(copybutton);
+    }
+  });
+</script>
+
+
+
+
+<script>
+  
+  
+  (function() {
+    const enableTocScroll = '1' == '1'
+    if (!enableTocScroll) {
+      return
+    }
+    if (!document.querySelector('.toc')) {
+      console.log('no toc found, ignore toc scroll')
+      return
+    }
+    
+
+    
+    const scrollListeners = window.scrollListeners
+    const headings = document.querySelectorAll('h1[id],h2[id],h3[id],h4[id],h5[id]');
+    const activeClass = 'active';
+
+    
+    let activeHeading = headings[0];
+    getLinkByHeading(activeHeading).classList.add(activeClass);
+
+    const onScroll = () => {
+      const passedHeadings = [];
+      for (const h of headings) {
+        
+        if (getOffsetTop(h) < 5) {
+          passedHeadings.push(h)
+        } else {
+          break;
+        }
+      }
+      if (passedHeadings.length > 0) {
+        newActiveHeading = passedHeadings[passedHeadings.length - 1];
+      } else {
+        newActiveHeading = headings[0];
+      }
+      if (activeHeading != newActiveHeading) {
+        getLinkByHeading(activeHeading).classList.remove(activeClass);
+        activeHeading = newActiveHeading;
+        getLinkByHeading(activeHeading).classList.add(activeClass);
+      }
+    }
+
+    let timer = null;
+    const scrollListener = () => {
+      if (timer !== null) {
+        clearTimeout(timer)
+      }
+      timer = setTimeout(onScroll, 50)
+    }
+    window.addEventListener('scroll', scrollListener, false);
+    scrollListeners.push(scrollListener)
+
+    function getLinkByHeading(heading) {
+      const id = encodeURI(heading.getAttribute('id')).toLowerCase();
+      return document.querySelector(`.toc ul li a[href="#${id}"]`);
+    }
+
+    function getOffsetTop(heading) {
+      if (!heading.getClientRects().length) {
+        return 0;
+      }
+      let rect = heading.getBoundingClientRect();
+      return rect.top
+    }
+  })();
+  </script>
+
+</body>
+
+</html>
