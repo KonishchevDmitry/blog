@@ -6,8 +6,50 @@
     <description>Recent content on Dmitry Konishchev&#39;s small blog</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>ru</language>
-    <lastBuildDate>Sun, 07 Sep 2025 12:39:59 +0300</lastBuildDate>
+    <lastBuildDate>Mon, 05 Jan 2026 15:37:29 +0300</lastBuildDate>
     <atom:link href="https://konishchev.ru/rss.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>nftables и TCP Explicit Congestion Notification – или как роботы Яндекса внезапно потеряли доступ к моему блогу</title>
+      <link>https://konishchev.ru/posts/nftables-tcp-ecn/</link>
+      <pubDate>Mon, 05 Jan 2026 20:56:25 +0300</pubDate>
+      
+      <guid>https://konishchev.ru/posts/nftables-tcp-ecn/</guid>
+      <description>&lt;p&gt;Пару недель назад мне пришло письмо от &lt;a href=&#34;https://webmaster.yandex.ru/&#34;&gt;Яндекс Вебмастера&lt;/a&gt; с уведомлением о том, что мой блог стал недоступен. Каких-либо подробностей ни в письме, ни в UI в таких случаях, к сожалению, не предоставляется, а инструменты анализа robots.txt и sitemap.xml и вовсе вводили в заблуждение словами &amp;ldquo;Server returns HTTP code 502 (expected code 200)&amp;rdquo; – хотя я явно не видел никаких обращений роботов в логах web-сервера. При этом, судя по тем же логам, пользователи как приходили раньше, так и продолжали приходить + &lt;a href=&#34;https://search.google.com/search-console&#34;&gt;Google Search Console&lt;/a&gt; тоже не видел никаких проблем.&lt;/p&gt;</description>
+      <content:encoded><![CDATA[<p>Пару недель назад мне пришло письмо от <a href="https://webmaster.yandex.ru/">Яндекс Вебмастера</a> с уведомлением о том, что мой блог стал недоступен. Каких-либо подробностей ни в письме, ни в UI в таких случаях, к сожалению, не предоставляется, а инструменты анализа robots.txt и sitemap.xml и вовсе вводили в заблуждение словами &ldquo;Server returns HTTP code 502 (expected code 200)&rdquo; – хотя я явно не видел никаких обращений роботов в логах web-сервера. При этом, судя по тем же логам, пользователи как приходили раньше, так и продолжали приходить + <a href="https://search.google.com/search-console">Google Search Console</a> тоже не видел никаких проблем.</p>
+<p>Поддержка Вебмастера ответила, что запросы роботов блокируются с моей стороны и посоветовала обратиться к хостинг-провайдеру.</p>
+<h2 id="поиск-причины">Поиск причины</h2>
+<p>Первая мысль – &ldquo;неужели где-то перемудрил с <a href="https://github.com/fail2ban/fail2ban">fail2ban</a>&lsquo;ом?&rdquo;, но его отключение ни к чему не привело. К счастью, поддержка подсказала номер <a href="https://en.wikipedia.org/wiki/Autonomous_system_(Internet)">AS</a>, из которой могут исходить запросы роботов Яндекса – <code>AS13238</code>, что сильно облегчило поиск причины на своей стороне.</p>
+<p>Получил список сетей Яндекса с помощью <code>bgpq3 -4 -F '%n/%l, ' AS13238</code> и добавил следующее правило в nftables поближе к самому началу обработки всех новых соединений:</p>
+<pre tabindex="0"><code>ip saddr {5.45.192.0/18, 5.45.202.0/24, 5.45.205.0/24, 5.45.215.0/24, 5.255.192.0/18, 5.255.197.0/24, 5.255.255.0/24, 37.9.64.0/18, 37.9.64.0/24, 37.9.87.0/24, 37.9.112.0/24, 37.140.128.0/18, 77.88.0.0/18, 77.88.8.0/24, 77.88.44.0/24, 77.88.55.0/24, 84.252.160.0/19, 87.250.224.0/19, 87.250.247.0/24, 90.156.179.0/24, 90.156.180.0/24, 90.156.181.0/24, 90.156.184.0/24, 90.156.185.0/24, 92.255.112.0/20, 93.158.128.0/18, 95.108.128.0/17, 141.8.128.0/18, 178.154.128.0/19, 178.154.131.0/24, 178.154.160.0/19, 185.32.187.0/24, 213.180.192.0/19, 213.180.199.0/24} meta nftrace set 1
+</code></pre><p>Запустил <code>nft monitor trace</code> и, воспользовавшись тулзой по анализу robots.txt, тут же получил следующее:</p>
+<pre tabindex="0"><code>trace id f15d4066 inet mangle PREROUTING packet: iif &#34;isp&#34; ether saddr 3c:c7:86:12:89:7a ether daddr 08:f1:db:e6:ac:3b ip saddr 5.255.253.45 ip daddr 10.217.4.5 ip dscp cs0 ip ecn ect0 ip ttl 50 ip id 3342 ip protocol tcp ip length 60 tcp sport 61996 tcp dport 443 tcp flags == 0xc2 tcp window 42300
+...
+trace id f15d4066 inet filter check_packets rule ct state new tcp flags != syn counter packets 0 bytes 0 goto bad_tcp_new_packet (verdict goto bad_tcp_new_packet)
+trace id f15d4066 inet filter bad_tcp_new_packet rule meta l4proto tcp counter packets 0 bytes 0 reject with tcp reset comment &#34;Invalid TCP packets&#34; (verdict drop)
+</code></pre><p>Ого, это интересно. Мы что-то дропнули вот тут:</p>
+<pre tabindex="0"><code># New TCP connections must be started with SYN packets.
+#
+# NEW but not SYN is the only invalid TCP flag not covered by the
+# INVALID state. The reason is because they are rarely malicious packets,
+# and they should not just be dropped, but might be an error or attack.
+#
+# For example, this may be just connections forgotten by conntrack module.
+ct state new tcp flags != syn counter goto bad_tcp_new_packet
+</code></pre><p>Пробую убрать это правило – и теперь действительно всё работает. Ещё интереснее. :)</p>
+<h2 id="распространённая-ошибка">Распространённая ошибка</h2>
+<p>Итак – проблема действительно на моей стороне. И это замечательно – меньше всего хотелось бы дебажить подобные вещи через поддержку своего провайдера.</p>
+<p>Но вот только пока не очень понятно, в чём именно проблема: это ведь довольно стандартная рекомендация – reject&rsquo;ить все новые TCP-соединения, у которых первый пакет не является SYN-пакетом. Да и что же тогда нам Яндексовый робот такое прислал, если это не SYN-пакет?..</p>
+<p>Смотрим более внимательно в нашу трассировку – и видим там следующие TCP-флаги: <code>tcp flags == 0xc2</code>. <code>0xc2</code> – это <code>11000010</code>, что, исходя из <a href="https://en.wikipedia.org/wiki/Transmission_Control_Protocol">структуры TCP-пакета</a>, является <code>SYN + ECE + CWR</code>. Отлично, теперь всё понятно – это вполне себе SYN-пакет, но только какой-то необычный, а правило у нас написано довольно тупо (<code>tcp flags != syn</code>) и совершенно на такой случай не рассчитано. При этом, если для iptables обычно даётся рекомендация вида <code>iptables -t mangle -A PREROUTING -p tcp ! --syn -m conntrack --ctstate NEW -j DROP</code>, где <code>--syn</code> на самом деле является шорткатом для <code>--tcp-flags SYN,RST,ACK,FIN SYN</code>, то для nftables (помимо в целом в разы более куцей информации по его конфигурации) даже <a href="https://wiki.nftables.org/wiki-nftables/index.php/Matching_packet_headers">официальная документация</a> предлагает <code>nft add rule filter input tcp flags != syn counter</code> в качестве примера правила &ldquo;to count packets that are not SYN ones&rdquo; (как и во многих статьях в блогах, в которых правило представлено ровно в том виде, в котором оно используется у меня) – в результате чего возникает ощущение, что я могу быть далеко не единственным, кто столкнётся с этой проблемой (и именно это побудило меня написать данную статью).</p>
+<p>Поэтому <code>tcp flags != syn</code> правильнее заменить на <code>tcp flags &amp; (syn|ack|rst|fin) != syn</code>.</p>
+<h2 id="explicit-congestion-notification">Explicit Congestion Notification</h2>
+<p>А что же всё-таки за такой необычный пакет к нам пришёл? <code>ECE</code> и <code>CWR</code>-флаги ведут нас к <a href="https://en.wikipedia.org/wiki/Explicit_Congestion_Notification">Explicit Congestion Notification</a> – хм, интересно: про <a href="https://en.wikipedia.org/wiki/TCP_congestion_control">TCP congestion control</a> я в курсе, а вот Explicit Congestion Notification – это для меня что-то новое. Отлично – значит день уже прожит не зря. :)</p>
+<p>Вкратце, суть его заключается в следующем: если традиционно в TCP текущая загруженность канала определялась неявно через отслеживание количества пакетов, которые потерялись по дороге к адресату (были дропнуты роутером где-то в середине пути), то ECN добавляет возможность роутеру специальным образом маркировать пакеты, тем самым заранее уведомляя участников TCP-соединения о том, что канал перегружен, и он скоро начнёт дропать пакеты. Но, само собой, рекомендую почитать <a href="https://en.wikipedia.org/wiki/Explicit_Congestion_Notification">более полное описание</a>.</p>
+<p>Поэтому, видимо, дело в том, что недавно в Яндексе поменялась конфигурация серверов, на которых располагаются поисковые боты, и они стали устанавливать соединения с включенным ECN.</p>
+<h2 id="в-итоге">В итоге</h2>
+<p>Если вы, как и во многих руководствах по nftables, дропаете/reject&rsquo;ите пакеты по правилу <code>ct state new tcp flags != syn</code>, то его необходимо заменить на <code>ct state new tcp flags &amp; (syn|ack|rst|fin) != syn</code> – иначе когда-нибудь эта довольно подлая бомба замедленного действия сработает и у вас.</p>
+]]></content:encoded>
+    </item>
+    
     <item>
       <title>WhatsApp сканирует сеть?</title>
       <link>https://konishchev.ru/posts/whatsapp-scans-network/</link>

@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="ru" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>nftables и TCP Explicit Congestion Notification – или как роботы Яндекса внезапно потеряли доступ к моему блогу | Dmitry Konishchev&#39;s small blog</title>
+<meta name="keywords" content="">
+<meta name="description" content="Пару недель назад мне пришло письмо от Яндекс Вебмастера с уведомлением о том, что мой блог стал недоступен. Каких-либо подробностей ни в письме, ни в UI в таких случаях, к сожалению, не предоставляется, а инструменты анализа robots.txt и sitemap.xml и вовсе вводили в заблуждение словами &ldquo;Server returns HTTP code 502 (expected code 200)&rdquo; – хотя я явно не видел никаких обращений роботов в логах web-сервера. При этом, судя по тем же логам, пользователи как приходили раньше, так и продолжали приходить &#43; Google Search Console тоже не видел никаких проблем.">
+<meta name="author" content="">
+<link rel="canonical" href="https://konishchev.ru/posts/nftables-tcp-ecn/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.min.27b0fc6a9e4df4110536f685cccf8ca9977c200af0d8eceaa8e77a5d07235262.css" integrity="sha256-J7D8ap5N9BEFNvaFzM&#43;MqZd8IArw2OzqqOd6XQcjUmI=" rel="preload stylesheet" as="style">
+
+<!-- Console icon by Icons8 (https://icons8.com/icon/pSUzrDn0xTlh/console) -->
+
+<link rel="icon" type="image/png" sizes="16x16" href="/images/favicon/16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/images/favicon/32.png">
+<link rel="icon" type="image/png" sizes="72x72" href="/images/favicon/72.png">
+<link rel="icon" type="image/png" sizes="96x96" href="/images/favicon/96.png">
+
+<link rel="apple-touch-icon" type="image/png" sizes="57x57" href="/images/favicon/57.png">
+<link rel="apple-touch-icon" type="image/png" sizes="60x60" href="/images/favicon/60.png">
+<link rel="apple-touch-icon" type="image/png" sizes="72x72" href="/images/favicon/72.png">
+<link rel="apple-touch-icon" type="image/png" sizes="76x76" href="/images/favicon/76.png">
+
+
+<link rel="alternate" hreflang="ru" href="https://konishchev.ru/posts/nftables-tcp-ecn/">
+
+<meta name="twitter:title" content="nftables и TCP Explicit Congestion Notification – или как роботы Яндекса внезапно потеряли доступ к моему блогу | Dmitry Konishchev&#39;s small blog" />
+<meta name="twitter:description" content="Пару недель назад мне пришло письмо от Яндекс Вебмастера с уведомлением о том, что мой блог стал недоступен. Каких-либо подробностей ни в письме, ни в UI в таких случаях, к сожалению, не предоставляется, а инструменты анализа robots.txt и sitemap.xml и вовсе вводили в заблуждение словами &ldquo;Server returns HTTP code 502 (expected code 200)&rdquo; – хотя я явно не видел никаких обращений роботов в логах web-сервера. При этом, судя по тем же логам, пользователи как приходили раньше, так и продолжали приходить &#43; Google Search Console тоже не видел никаких проблем." />
+<meta property="og:title" content="nftables и TCP Explicit Congestion Notification – или как роботы Яндекса внезапно потеряли доступ к моему блогу | Dmitry Konishchev&#39;s small blog" />
+<meta property="og:description" content="Пару недель назад мне пришло письмо от Яндекс Вебмастера с уведомлением о том, что мой блог стал недоступен. Каких-либо подробностей ни в письме, ни в UI в таких случаях, к сожалению, не предоставляется, а инструменты анализа robots.txt и sitemap.xml и вовсе вводили в заблуждение словами &ldquo;Server returns HTTP code 502 (expected code 200)&rdquo; – хотя я явно не видел никаких обращений роботов в логах web-сервера. При этом, судя по тем же логам, пользователи как приходили раньше, так и продолжали приходить &#43; Google Search Console тоже не видел никаких проблем." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://konishchev.ru/posts/nftables-tcp-ecn/" />
+<meta property="article:section" content="posts" />
+  <meta property="article:published_time" content="2026-01-05T20:56:25&#43;03:00" />
+  <meta property="article:modified_time" content="2026-01-05T15:37:29&#43;03:00" />
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "Posts",
+      "item": "https://konishchev.ru/posts/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "nftables и TCP Explicit Congestion Notification – или как роботы Яндекса внезапно потеряли доступ к моему блогу",
+      "item": "https://konishchev.ru/posts/nftables-tcp-ecn/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "nftables и TCP Explicit Congestion Notification – или как роботы Яндекса внезапно потеряли доступ к моему блогу | Dmitry Konishchev's small blog",
+  "name": "nftables и TCP Explicit Congestion Notification – или как роботы Яндекса внезапно потеряли доступ к моему блогу",
+  "description": "Пару недель назад мне пришло письмо от Яндекс Вебмастера с уведомлением о том, что мой блог стал недоступен. Каких-либо подробностей ни в письме, ни в UI в таких случаях, к сожалению, не предоставляется, а инструменты анализа robots.txt и sitemap.xml и вовсе вводили в заблуждение словами \u0026ldquo;Server returns HTTP code 502 (expected code 200)\u0026rdquo; – хотя я явно не видел никаких обращений роботов в логах web-сервера. При этом, судя по тем же логам, пользователи как приходили раньше, так и продолжали приходить + Google Search Console тоже не видел никаких проблем.\n",
+  "keywords": [
+    
+  ],
+  "wordCount" : "881",
+  "inLanguage": "ru",
+  "datePublished": "2026-01-05T20:56:25+03:00",
+  "dateModified": "2026-01-05T15:37:29+03:00",
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://konishchev.ru/posts/nftables-tcp-ecn/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Dmitry Konishchev's small blog",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://konishchev.ru/favicon.ico"
+    }
+  }
+}
+</script>
+<script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();
+    for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+    k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(96897335, "init", {
+        clickmap:true,
+        trackLinks:true,
+        accurateTrackBounce:true
+    });
+</script>
+<noscript><div><img src="https://mc.yandex.ru/watch/96897335" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+</noscript>
+
+</head>
+
+<body class=" type-posts kind-page layout-" id="top">
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://konishchev.ru/" accesskey="h" title="Dmitry Konishchev&#39;s small blog (Alt + H)">Dmitry Konishchev&#39;s small blog</a>
+            <span class="logo-switches">
+            </span>
+        </div>
+        <ul id="menu">
+        </ul>
+    </nav>
+</header>
+<main class="main post">
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title">nftables и TCP Explicit Congestion Notification – или как роботы Яндекса внезапно потеряли доступ к моему блогу</h1>
+    <div class="post-meta"><span class="meta-item">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-calendar" style="user-select: text;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" style="user-select: text;"></rect><line x1="16" y1="2" x2="16" y2="6" style="user-select: text;"></line><line x1="8" y1="2" x2="8" y2="6" style="user-select: text;"></line><line x1="3" y1="10" x2="21" y2="10" style="user-select: text;"></line></svg>
+  <span>5 января 2026</span></span>
+&nbsp;|&nbsp;<span class="meta-item">
+    <span class="edit-post">
+        <a href="https://github.com/KonishchevDmitry/blog/tree/master/content/posts/2026-01-05-nftables-tcp-ecn.md" rel="noopener noreferrer" target="_blank">Исправить опечатку</a>
+    </span>
+</span>
+
+      
+    </div>
+  </header> <div class="toc side right">
+    <details  open>
+        <summary accesskey="c" title="(Alt + C)">
+            <span class="details">Оглавление</span>
+        </summary>
+
+        <div class="inner"><ul>
+                <li>
+                    <a href="#%d0%bf%d0%be%d0%b8%d1%81%d0%ba-%d0%bf%d1%80%d0%b8%d1%87%d0%b8%d0%bd%d1%8b" aria-label="Поиск причины">Поиск причины</a></li>
+                <li>
+                    <a href="#%d1%80%d0%b0%d1%81%d0%bf%d1%80%d0%be%d1%81%d1%82%d1%80%d0%b0%d0%bd%d1%91%d0%bd%d0%bd%d0%b0%d1%8f-%d0%be%d1%88%d0%b8%d0%b1%d0%ba%d0%b0" aria-label="Распространённая ошибка">Распространённая ошибка</a></li>
+                <li>
+                    <a href="#explicit-congestion-notification" aria-label="Explicit Congestion Notification">Explicit Congestion Notification</a></li>
+                <li>
+                    <a href="#%d0%b2-%d0%b8%d1%82%d0%be%d0%b3%d0%b5" aria-label="В итоге">В итоге</a>
+                </li>
+            </ul>
+        </div>
+    </details>
+</div>
+
+  <div class="post-content"><p>Пару недель назад мне пришло письмо от <a href="https://webmaster.yandex.ru/">Яндекс Вебмастера</a> с уведомлением о том, что мой блог стал недоступен. Каких-либо подробностей ни в письме, ни в UI в таких случаях, к сожалению, не предоставляется, а инструменты анализа robots.txt и sitemap.xml и вовсе вводили в заблуждение словами &ldquo;Server returns HTTP code 502 (expected code 200)&rdquo; – хотя я явно не видел никаких обращений роботов в логах web-сервера. При этом, судя по тем же логам, пользователи как приходили раньше, так и продолжали приходить + <a href="https://search.google.com/search-console">Google Search Console</a> тоже не видел никаких проблем.</p>
+<p>Поддержка Вебмастера ответила, что запросы роботов блокируются с моей стороны и посоветовала обратиться к хостинг-провайдеру.</p>
+<h2 id="поиск-причины">Поиск причины<a hidden class="anchor" aria-hidden="true" href="#поиск-причины">¶</a></h2>
+<p>Первая мысль – &ldquo;неужели где-то перемудрил с <a href="https://github.com/fail2ban/fail2ban">fail2ban</a>&lsquo;ом?&rdquo;, но его отключение ни к чему не привело. К счастью, поддержка подсказала номер <a href="https://en.wikipedia.org/wiki/Autonomous_system_(Internet)">AS</a>, из которой могут исходить запросы роботов Яндекса – <code>AS13238</code>, что сильно облегчило поиск причины на своей стороне.</p>
+<p>Получил список сетей Яндекса с помощью <code>bgpq3 -4 -F '%n/%l, ' AS13238</code> и добавил следующее правило в nftables поближе к самому началу обработки всех новых соединений:</p>
+<pre tabindex="0"><code>ip saddr {5.45.192.0/18, 5.45.202.0/24, 5.45.205.0/24, 5.45.215.0/24, 5.255.192.0/18, 5.255.197.0/24, 5.255.255.0/24, 37.9.64.0/18, 37.9.64.0/24, 37.9.87.0/24, 37.9.112.0/24, 37.140.128.0/18, 77.88.0.0/18, 77.88.8.0/24, 77.88.44.0/24, 77.88.55.0/24, 84.252.160.0/19, 87.250.224.0/19, 87.250.247.0/24, 90.156.179.0/24, 90.156.180.0/24, 90.156.181.0/24, 90.156.184.0/24, 90.156.185.0/24, 92.255.112.0/20, 93.158.128.0/18, 95.108.128.0/17, 141.8.128.0/18, 178.154.128.0/19, 178.154.131.0/24, 178.154.160.0/19, 185.32.187.0/24, 213.180.192.0/19, 213.180.199.0/24} meta nftrace set 1
+</code></pre><p>Запустил <code>nft monitor trace</code> и, воспользовавшись тулзой по анализу robots.txt, тут же получил следующее:</p>
+<pre tabindex="0"><code>trace id f15d4066 inet mangle PREROUTING packet: iif &#34;isp&#34; ether saddr 3c:c7:86:12:89:7a ether daddr 08:f1:db:e6:ac:3b ip saddr 5.255.253.45 ip daddr 10.217.4.5 ip dscp cs0 ip ecn ect0 ip ttl 50 ip id 3342 ip protocol tcp ip length 60 tcp sport 61996 tcp dport 443 tcp flags == 0xc2 tcp window 42300
+...
+trace id f15d4066 inet filter check_packets rule ct state new tcp flags != syn counter packets 0 bytes 0 goto bad_tcp_new_packet (verdict goto bad_tcp_new_packet)
+trace id f15d4066 inet filter bad_tcp_new_packet rule meta l4proto tcp counter packets 0 bytes 0 reject with tcp reset comment &#34;Invalid TCP packets&#34; (verdict drop)
+</code></pre><p>Ого, это интересно. Мы что-то дропнули вот тут:</p>
+<pre tabindex="0"><code># New TCP connections must be started with SYN packets.
+#
+# NEW but not SYN is the only invalid TCP flag not covered by the
+# INVALID state. The reason is because they are rarely malicious packets,
+# and they should not just be dropped, but might be an error or attack.
+#
+# For example, this may be just connections forgotten by conntrack module.
+ct state new tcp flags != syn counter goto bad_tcp_new_packet
+</code></pre><p>Пробую убрать это правило – и теперь действительно всё работает. Ещё интереснее. :)</p>
+<h2 id="распространённая-ошибка">Распространённая ошибка<a hidden class="anchor" aria-hidden="true" href="#распространённая-ошибка">¶</a></h2>
+<p>Итак – проблема действительно на моей стороне. И это замечательно – меньше всего хотелось бы дебажить подобные вещи через поддержку своего провайдера.</p>
+<p>Но вот только пока не очень понятно, в чём именно проблема: это ведь довольно стандартная рекомендация – reject&rsquo;ить все новые TCP-соединения, у которых первый пакет не является SYN-пакетом. Да и что же тогда нам Яндексовый робот такое прислал, если это не SYN-пакет?..</p>
+<p>Смотрим более внимательно в нашу трассировку – и видим там следующие TCP-флаги: <code>tcp flags == 0xc2</code>. <code>0xc2</code> – это <code>11000010</code>, что, исходя из <a href="https://en.wikipedia.org/wiki/Transmission_Control_Protocol">структуры TCP-пакета</a>, является <code>SYN + ECE + CWR</code>. Отлично, теперь всё понятно – это вполне себе SYN-пакет, но только какой-то необычный, а правило у нас написано довольно тупо (<code>tcp flags != syn</code>) и совершенно на такой случай не рассчитано. При этом, если для iptables обычно даётся рекомендация вида <code>iptables -t mangle -A PREROUTING -p tcp ! --syn -m conntrack --ctstate NEW -j DROP</code>, где <code>--syn</code> на самом деле является шорткатом для <code>--tcp-flags SYN,RST,ACK,FIN SYN</code>, то для nftables (помимо в целом в разы более куцей информации по его конфигурации) даже <a href="https://wiki.nftables.org/wiki-nftables/index.php/Matching_packet_headers">официальная документация</a> предлагает <code>nft add rule filter input tcp flags != syn counter</code> в качестве примера правила &ldquo;to count packets that are not SYN ones&rdquo; (как и во многих статьях в блогах, в которых правило представлено ровно в том виде, в котором оно используется у меня) – в результате чего возникает ощущение, что я могу быть далеко не единственным, кто столкнётся с этой проблемой (и именно это побудило меня написать данную статью).</p>
+<p>Поэтому <code>tcp flags != syn</code> правильнее заменить на <code>tcp flags &amp; (syn|ack|rst|fin) != syn</code>.</p>
+<h2 id="explicit-congestion-notification">Explicit Congestion Notification<a hidden class="anchor" aria-hidden="true" href="#explicit-congestion-notification">¶</a></h2>
+<p>А что же всё-таки за такой необычный пакет к нам пришёл? <code>ECE</code> и <code>CWR</code>-флаги ведут нас к <a href="https://en.wikipedia.org/wiki/Explicit_Congestion_Notification">Explicit Congestion Notification</a> – хм, интересно: про <a href="https://en.wikipedia.org/wiki/TCP_congestion_control">TCP congestion control</a> я в курсе, а вот Explicit Congestion Notification – это для меня что-то новое. Отлично – значит день уже прожит не зря. :)</p>
+<p>Вкратце, суть его заключается в следующем: если традиционно в TCP текущая загруженность канала определялась неявно через отслеживание количества пакетов, которые потерялись по дороге к адресату (были дропнуты роутером где-то в середине пути), то ECN добавляет возможность роутеру специальным образом маркировать пакеты, тем самым заранее уведомляя участников TCP-соединения о том, что канал перегружен, и он скоро начнёт дропать пакеты. Но, само собой, рекомендую почитать <a href="https://en.wikipedia.org/wiki/Explicit_Congestion_Notification">более полное описание</a>.</p>
+<p>Поэтому, видимо, дело в том, что недавно в Яндексе поменялась конфигурация серверов, на которых располагаются поисковые боты, и они стали устанавливать соединения с включенным ECN.</p>
+<h2 id="в-итоге">В итоге<a hidden class="anchor" aria-hidden="true" href="#в-итоге">¶</a></h2>
+<p>Если вы, как и во многих руководствах по nftables, дропаете/reject&rsquo;ите пакеты по правилу <code>ct state new tcp flags != syn</code>, то его необходимо заменить на <code>ct state new tcp flags &amp; (syn|ack|rst|fin) != syn</code> – иначе когда-нибудь эта довольно подлая бомба замедленного действия сработает и у вас.</p>
+
+
+  </div>
+
+  <footer class="post-footer">
+  </footer>
+    <div class="comments-separator"></div><script src="https://giscus.app/client.js"
+        data-repo="KonishchevDmitry/blog"
+        data-repo-id="R_kgDOLqoJ-g"
+        data-category="Announcements"
+        data-category-id="DIC_kwDOLqoJ-s4Cefph"
+        data-mapping="pathname"
+        data-strict="1"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="light"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+</article>
+    </main>
+    
+<footer class="footer"><div class="social-icons">
+    <a href="mailto:konishchev@gmail.com" target="_blank" title="Email" style="box-shadow: none">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 21" fill="none" stroke="currentColor" stroke-width="2"
+    stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+    <polyline points="22,6 12,13 2,6"></polyline>
+</svg>
+
+    </a>
+    <a href="https://github.com/KonishchevDmitry" target="_blank" title="GitHub" style="box-shadow: none">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+    stroke-linecap="round" stroke-linejoin="round">
+    <path
+        d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22">
+    </path>
+</svg>
+
+    </a>
+    <a href="https://www.linkedin.com/in/konishchev/" target="_blank" title="LinkedIn" style="box-shadow: none">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+    stroke-linecap="round" stroke-linejoin="round">
+    <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path>
+    <rect x="2" y="9" width="4" height="12"></rect>
+    <circle cx="4" cy="4" r="2"></circle>
+</svg>
+
+    </a>
+    <a href="/rss.xml" target="_blank" title="RSS" style="box-shadow: none">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+    stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 11a9 9 0 0 1 9 9" />
+    <path d="M4 4a16 16 0 0 1 16 16" />
+    <circle cx="5" cy="19" r="1" />
+</svg>
+
+    </a>
+</div>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+    <path d="M12 6H0l6-6z" />
+  </svg>
+</a>
+
+
+
+<script>
+  (function () {
+    let menu = document.getElementById('menu')
+    if (menu) {
+      menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+      menu.onscroll = function () {
+        localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+      }
+    }
+
+    const disableSmoothScroll = '' == '1';
+    const enableInstantClick = '' == '1';
+    
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || disableSmoothScroll || enableInstantClick) {
+      return;
+    }
+    
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener("click", function (e) {
+        e.preventDefault();
+        var id = this.getAttribute("href").substr(1);
+        document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+          behavior: "smooth"
+        });
+        if (id === "top") {
+          history.replaceState(null, null, " ");
+        } else {
+          history.pushState(null, null, `#${id}`);
+        }
+      });
+    });
+  })();
+</script>
+<script>
+  var mybutton = document.getElementById("top-link");
+  window.onscroll = function () {
+    if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+      mybutton.style.visibility = "visible";
+      mybutton.style.opacity = "1";
+    } else {
+      mybutton.style.visibility = "hidden";
+      mybutton.style.opacity = "0";
+    }
+  };
+</script>
+<script>
+  if (window.scrollListeners) {
+    
+    for (const listener of scrollListeners) {
+      window.removeEventListener('scroll', listener)
+    }
+  }
+  window.scrollListeners = []
+</script>
+
+
+
+<script src="/js/medium-zoom.min.js" data-no-instant
+></script>
+<script>
+  document.querySelectorAll('pre > code').forEach((codeblock) => {
+    const container = codeblock.parentNode.parentNode;
+
+    const copybutton = document.createElement('button');
+    copybutton.classList.add('copy-code');
+    copybutton.innerText = 'копировать';
+
+    function copyingDone() {
+      copybutton.innerText = 'скопировано!';
+      setTimeout(() => {
+        copybutton.innerText = 'копировать';
+      }, 2000);
+    }
+
+    copybutton.addEventListener('click', (cb) => {
+      if ('clipboard' in navigator) {
+        navigator.clipboard.writeText(codeblock.textContent);
+        copyingDone();
+        return;
+      }
+
+      const range = document.createRange();
+      range.selectNodeContents(codeblock);
+      const selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+      try {
+        document.execCommand('copy');
+        copyingDone();
+      } catch (e) { };
+      selection.removeRange(range);
+    });
+
+    if (container.classList.contains("highlight")) {
+      container.appendChild(copybutton);
+    } else if (container.parentNode.firstChild == container) {
+      
+    } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+      
+      codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+    } else {
+      
+      codeblock.parentNode.appendChild(copybutton);
+    }
+  });
+</script>
+
+
+
+
+<script>
+  
+  
+  (function() {
+    const enableTocScroll = '1' == '1'
+    if (!enableTocScroll) {
+      return
+    }
+    if (!document.querySelector('.toc')) {
+      console.log('no toc found, ignore toc scroll')
+      return
+    }
+    
+
+    
+    const scrollListeners = window.scrollListeners
+    const headings = document.querySelectorAll('h1[id],h2[id],h3[id],h4[id],h5[id]');
+    const activeClass = 'active';
+
+    
+    let activeHeading = headings[0];
+    getLinkByHeading(activeHeading).classList.add(activeClass);
+
+    const onScroll = () => {
+      const passedHeadings = [];
+      for (const h of headings) {
+        
+        if (getOffsetTop(h) < 5) {
+          passedHeadings.push(h)
+        } else {
+          break;
+        }
+      }
+      if (passedHeadings.length > 0) {
+        newActiveHeading = passedHeadings[passedHeadings.length - 1];
+      } else {
+        newActiveHeading = headings[0];
+      }
+      if (activeHeading != newActiveHeading) {
+        getLinkByHeading(activeHeading).classList.remove(activeClass);
+        activeHeading = newActiveHeading;
+        getLinkByHeading(activeHeading).classList.add(activeClass);
+      }
+    }
+
+    let timer = null;
+    const scrollListener = () => {
+      if (timer !== null) {
+        clearTimeout(timer)
+      }
+      timer = setTimeout(onScroll, 50)
+    }
+    window.addEventListener('scroll', scrollListener, false);
+    scrollListeners.push(scrollListener)
+
+    function getLinkByHeading(heading) {
+      const id = encodeURI(heading.getAttribute('id')).toLowerCase();
+      return document.querySelector(`.toc ul li a[href="#${id}"]`);
+    }
+
+    function getOffsetTop(heading) {
+      if (!heading.getClientRects().length) {
+        return 0;
+      }
+      let rect = heading.getBoundingClientRect();
+      return rect.top
+    }
+  })();
+  </script>
+
+</body>
+
+</html>
